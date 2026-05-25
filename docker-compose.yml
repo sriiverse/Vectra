@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: vectra_postgres
+    environment:
+      POSTGRES_USER: vectra
+      POSTGRES_PASSWORD: vectra_secret
+      POSTGRES_DB: vectra_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - vectra_pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vectra -d vectra_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  vectra_pgdata:
+    driver: local

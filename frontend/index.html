@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="indigo-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vectra — Multi-Modal Hybrid Retrieval Dashboard</title>
+  <meta name="description" content="Vectra is a multi-modal hybrid visual search engine combining CLIP, pgvector, and cross-encoder reranking." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    
+    <!-- ── Left Navigation Sidebar ────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="logo-icon">⬡</span>
+        <div class="logo-meta">
+          <span class="logo-text">Vectra</span>
+          <span class="logo-subtext">AI Visual Search</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <button class="menu-item active" data-tab="search">
+          <span class="menu-icon">🔍</span>
+          <span class="menu-label">Search</span>
+        </button>
+        <button class="menu-item" data-tab="catalog">
+          <span class="menu-icon">📦</span>
+          <span class="menu-label">Catalog</span>
+        </button>
+        <button class="menu-item" data-tab="history">
+          <span class="menu-icon">⏳</span>
+          <span class="menu-label">History</span>
+        </button>
+        <button class="menu-item" data-tab="collections">
+          <span class="menu-icon">💖</span>
+          <span class="menu-label">Collections</span>
+        </button>
+        <button class="menu-item" data-tab="settings">
+          <span class="menu-icon">⚙️</span>
+          <span class="menu-label">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Pro Plan Card -->
+      <div class="sidebar-banner-card">
+        <div class="banner-card-glow"></div>
+        <div class="banner-content">
+          <span class="banner-title">Pro Plan</span>
+          <span class="banner-desc">Unlimited searches active</span>
+          <button class="banner-btn" id="btn-upgrade">Upgrade</button>
+        </div>
+      </div>
+
+      <!-- User Profile Badge -->
+      <div class="sidebar-profile">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120" alt="Aarav Sharma" class="profile-avatar" />
+        <div class="profile-meta">
+          <span class="profile-name">Aarav Sharma</span>
+          <span class="profile-role">Solutions Architect</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Main Dashboard Panel ──────────────────────────────── -->
+    <main class="main-content">
+      
+      <!-- Topbar / Stats -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="credits-chip">⚡ 120 searches left</span>
+        </div>
+        <div class="topbar-right">
+          <div class="header-status">
+            <span class="status-dot" id="status-dot"></span>
+            <span class="status-text" id="status-text">Connecting to DB...</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Dashboard Scroll Container -->
+      <div class="dashboard-scroll">
+        
+        <!-- ==================== SEARCH TAB ==================== -->
+        <section class="tab-pane active" id="tab-search">
+          
+          <!-- View A: Search Query Builder -->
+          <div class="search-builder-view" id="search-builder-view">
+            <div class="hero-header">
+              <h1 class="hero-title">Find Products by Image,<br/>Refined by <span class="highlight-text">Language.</span></h1>
+              <p class="hero-subtitle">
+                Upload a product image and optionally add a natural language modifier. Vectra fuses vision and language representations to find exact matches.
+              </p>
+            </div>
+
+            <div class="search-flow-grid">
+              
+              <!-- Column 1: Image Dropzone & Text Modifier -->
+              <div class="builder-column">
+                <div class="dashboard-card">
+                  <h2 class="card-section-title">1. Input Modalities</h2>
+                  
+                  <div class="upload-modifier-wrap">
+                    <!-- Drop Zone -->
+                    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Image upload area. Drag and drop or browse.">
+                      <div class="dropzone-idle" id="dropzone-idle">
+                        <div class="dropzone-cloud-icon">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+                        </div>
+                        <p class="dropzone-label">Drop image here</p>
+                        <p class="dropzone-sub">or <span class="dropzone-link">browse files</span></p>
+                        <p class="dropzone-formats">JPG, PNG, WEBP · max 10MB</p>
+                      </div>
+                      <div class="dropzone-preview hidden" id="dropzone-preview">
+                        <img id="preview-img" alt="Uploaded product preview" />
+                        <button class="preview-clear" id="preview-clear" aria-label="Remove image">✕</button>
+                      </div>
+                      <input type="file" id="file-input" accept="image/*" class="visually-hidden" aria-hidden="true" />
+                    </div>
+
+                    <!-- Text Modifier -->
+                    <div class="field-group">
+                      <label class="field-label" for="text-modifier">
+                        Text Modifier <span class="field-optional">(optional)</span>
+                      </label>
+                      <input type="text" id="text-modifier" class="field-input" placeholder="e.g. 'but in black', 'but smaller'" maxlength="200" autocomplete="off" />
+                      <p class="field-hint">CLIP's shared embedding space will blend text at 30% weight with the image representation.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Column 2: Hard Filters -->
+              <div class="builder-column">
+                <div class="dashboard-card">
+                  <h2 class="card-section-title">2. Business Filters <span class="card-subtitle">(SQL pre-filtering)</span></h2>
+                  
+                  <div class="filters-vertical-grid">
+                    <div class="field-group">
+                      <label class="field-label" for="filter-category">Category</label>
+                      <select id="filter-category" class="field-select">
+                        <option value="">All Categories</option>
+                        <option value="Apparel">Apparel</option>
+                        <option value="Footwear">Footwear</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Home">Home</option>
+                        <option value="Beauty">Beauty</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="filter-price">
+                        Max Price: <strong id="price-display">₹5,000</strong>
+                      </label>
+                      <div class="range-slider-container">
+                        <input type="range" id="filter-price" class="field-range" min="100" max="30000" step="100" value="5000" aria-valuemin="100" aria-valuemax="30000" aria-valuenow="5000" />
+                        <div class="range-labels">
+                          <span>₹100</span><span>₹30,000</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="field-group toggle-group-box">
+                      <label class="toggle-label" for="filter-instock">
+                        <div class="toggle-text-wrap">
+                          <span class="toggle-main-label">In Stock Only</span>
+                          <span class="toggle-sub-label">Exclude unavailable catalog items</span>
+                        </div>
+                        <div class="toggle-wrap">
+                          <input type="checkbox" id="filter-instock" role="switch" checked />
+                          <span class="toggle-slider"></span>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div class="field-group">
+                      <label class="field-label" for="filter-topn">Results to Return: <strong id="topn-display">10</strong></label>
+                      <input type="range" id="filter-topn" class="field-range" min="3" max="30" step="1" value="10" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Action Search Bar -->
+            <div class="search-submit-bar">
+              <button class="btn-primary" id="search-btn" disabled>
+                <span class="btn-icon-svg">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <span class="btn-text">Run Hybrid Search</span>
+              </button>
+            </div>
+
+            <!-- Bottom static pipeline stepper -->
+            <div class="pipeline-flow-footer">
+              <div class="pipeline-chip">
+                <span class="chip-dot"></span>
+                <div class="chip-text">
+                  <strong>CLIP Embedding</strong>
+                  <span>Image + Text ➔ Vector</span>
+                </div>
+              </div>
+              <div class="pipeline-connector">➔</div>
+              <div class="pipeline-chip">
+                <span class="chip-dot"></span>
+                <div class="chip-text">
+                  <strong>pgvector + SQL</strong>
+                  <span>HNSW Index + Filtering</span>
+                </div>
+              </div>
+              <div class="pipeline-connector">➔</div>
+              <div class="pipeline-chip">
+                <span class="chip-dot"></span>
+                <div class="chip-text">
+                  <strong>Cross-Encoder</strong>
+                  <span>MiniLM Reranking</span>
+                </div>
+              </div>
+              <div class="pipeline-connector">➔</div>
+              <div class="pipeline-chip">
+                <span class="chip-dot"></span>
+                <div class="chip-text">
+                  <strong>Refined Results</strong>
+                  <span>Precision matching</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View B: Pipeline Loader & Search Results -->
+          <div class="search-results-view hidden" id="search-results-view">
+            
+            <!-- Loader State -->
+            <div class="results-loading hidden" id="results-loading">
+              <div class="loading-network-visualization">
+                <div class="network-node node-1 active" id="step-embed">
+                  <span class="node-icon">🖼️</span>
+                  <span class="node-label">CLIP Embedding</span>
+                </div>
+                <div class="network-node node-2" id="step-retrieve">
+                  <span class="node-icon">🗄️</span>
+                  <span class="node-label">pgvector Search</span>
+                </div>
+                <div class="network-node node-3" id="step-rerank">
+                  <span class="node-icon">🎯</span>
+                  <span class="node-label">Cross-Rerank</span>
+                </div>
+                <svg class="network-lines" viewBox="0 0 400 100">
+                  <line x1="80" y1="50" x2="200" y2="50" class="line-1" />
+                  <line x1="200" y1="50" x2="320" y2="50" class="line-2" />
+                  <circle cx="80" cy="50" r="4" class="dot-1" />
+                  <circle cx="200" cy="50" r="4" class="dot-2" />
+                  <circle cx="320" cy="50" r="4" class="dot-3" />
+                </svg>
+              </div>
+              <p class="loader-status-text">Warming retrieval engines...</p>
+            </div>
+
+            <!-- Error State -->
+            <div class="results-error hidden" id="results-error">
+              <div class="error-icon-box">⚠️</div>
+              <h3 class="error-title" id="error-title">Pipeline Disrupted</h3>
+              <p class="error-detail" id="error-detail">Could not parse image file metadata.</p>
+              <button class="btn-secondary" id="error-retry">Retry Execution</button>
+            </div>
+
+            <!-- Results View Contents -->
+            <div class="results-container-layout hidden" id="results-container">
+              
+              <div class="results-header-actions">
+                <button class="btn-back-link" id="btn-back-search">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  Back to Search Builder
+                </button>
+                <div class="results-title-meta">
+                  <h1 class="results-heading">Search Results</h1>
+                  <span class="results-count" id="results-count-label">Showing top 10 matches</span>
+                </div>
+              </div>
+
+              <!-- Query Breadcrumbs Panel -->
+              <div class="query-breadcrumbs-card">
+                <div class="breadcrumb-group query-meta-box">
+                  <span class="breadcrumb-label">Query Intent</span>
+                  <div class="breadcrumb-query-visual">
+                    <img id="breadcrumb-query-img" src="" alt="Query" />
+                    <span class="breadcrumb-query-text" id="breadcrumb-query-text">No text modifier</span>
+                  </div>
+                </div>
+                <div class="breadcrumb-group filters-meta-box">
+                  <span class="breadcrumb-label">Applied Filters</span>
+                  <div class="breadcrumb-filters-list" id="breadcrumb-filters">
+                    <span class="filter-badge">All Categories</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pipeline performance stats -->
+              <div class="results-meta-metrics" id="results-meta"></div>
+
+              <!-- Product Cards Grid -->
+              <div class="results-grid" id="results-grid"></div>
+
+              <!-- Load More button -->
+              <div class="results-footer-actions">
+                <button class="btn-load-more" id="btn-load-more">
+                  <span>Load More Results</span>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Idle State placeholder (Not actively used but kept to satisfy app.js references) -->
+          <div class="hidden" id="results-idle"></div>
+        </section>
+
+        <!-- ==================== CATALOG TAB ==================== -->
+        <section class="tab-pane hidden" id="tab-catalog">
+          <div class="catalog-tab-header">
+            <h1 class="tab-title">Product Catalog</h1>
+            <p class="tab-subtitle">Browse all items indexed in the pgvector database. Click any product to load its image as a search query.</p>
+            
+            <div class="catalog-filters-bar">
+              <button class="filter-pill active" data-cat="" id="pill-all">All Products</button>
+              <button class="filter-pill" data-cat="Apparel">Apparel</button>
+              <button class="filter-pill" data-cat="Footwear">Footwear</button>
+              <button class="filter-pill" data-cat="Electronics">Electronics</button>
+              <button class="filter-pill" data-cat="Home">Home</button>
+              <button class="filter-pill" data-cat="Beauty">Beauty</button>
+            </div>
+          </div>
+
+          <div class="catalog-grid" id="catalog-grid"></div>
+          <div class="catalog-count-footer" id="catalog-count"></div>
+        </section>
+
+        <!-- ==================== HISTORY TAB ==================== -->
+        <section class="tab-pane hidden" id="tab-history">
+          <div class="history-tab-header">
+            <h1 class="tab-title">Search History</h1>
+            <p class="tab-subtitle">Your local visual retrieval logs. Re-run any past search with a single click.</p>
+          </div>
+          <div class="history-list" id="history-list">
+            <!-- Empty state -->
+            <div class="history-empty-state">
+              <span class="empty-icon">⏳</span>
+              <h3>No past searches</h3>
+              <p>Your searches will be logged here locally.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== COLLECTIONS TAB ==================== -->
+        <section class="tab-pane hidden" id="tab-collections">
+          <div class="collections-tab-header">
+            <h1 class="tab-title">Saved Collections</h1>
+            <p class="tab-subtitle">Products you've bookmarked. Explore them or use them to discover visually matching alternatives.</p>
+          </div>
+          <div class="collections-grid" id="collections-grid">
+            <div class="collections-empty-state">
+              <span class="empty-icon">💖</span>
+              <h3>No bookmarks yet</h3>
+              <p>Hover over products in your search results and click the heart icon to save them here.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== SETTINGS TAB ==================== -->
+        <section class="tab-pane hidden" id="tab-settings">
+          <div class="settings-tab-header">
+            <h1 class="tab-title">System Settings</h1>
+            <p class="tab-subtitle">Customize the interface visual theme and configure technical pipeline parameters.</p>
+          </div>
+
+          <div class="settings-container-layout">
+            
+            <!-- Theme Selection Card -->
+            <div class="dashboard-card">
+              <h2 class="card-section-title">Visual Aesthetics & Themes</h2>
+              <p class="card-section-desc">Toggle between five premium colors inspired by modern e-commerce visual guidelines.</p>
+              
+              <div class="themes-grid">
+                
+                <button class="theme-select-card active" data-theme-id="indigo-dark">
+                  <div class="theme-card-preview theme-indigo">
+                    <span class="preview-dot dot-primary"></span>
+                    <span class="preview-dot dot-bg"></span>
+                  </div>
+                  <span class="theme-card-label">Deep Indigo (Dark)</span>
+                </button>
+
+                <button class="theme-select-card" data-theme-id="midnight-neon">
+                  <div class="theme-card-preview theme-neon">
+                    <span class="preview-dot dot-primary"></span>
+                    <span class="preview-dot dot-bg"></span>
+                  </div>
+                  <span class="theme-card-label">Midnight Neon (Dark)</span>
+                </button>
+
+                <button class="theme-select-card" data-theme-id="nordic-sage">
+                  <div class="theme-card-preview theme-sage">
+                    <span class="preview-dot dot-primary"></span>
+                    <span class="preview-dot dot-bg"></span>
+                  </div>
+                  <span class="theme-card-label">Nordic Sage (Dark)</span>
+                </button>
+
+                <button class="theme-select-card" data-theme-id="clay-earth">
+                  <div class="theme-card-preview theme-clay">
+                    <span class="preview-dot dot-primary"></span>
+                    <span class="preview-dot dot-bg"></span>
+                  </div>
+                  <span class="theme-card-label">Clay Earth (Light)</span>
+                </button>
+
+                <button class="theme-select-card" data-theme-id="lavender-light">
+                  <div class="theme-card-preview theme-lavender">
+                    <span class="preview-dot dot-primary"></span>
+                    <span class="preview-dot dot-bg"></span>
+                  </div>
+                  <span class="theme-card-label">Lavender Light (Light)</span>
+                </button>
+
+              </div>
+            </div>
+
+            <!-- Architecture Info -->
+            <div class="dashboard-card">
+              <h2 class="card-section-title">Technical Architecture Reference</h2>
+              <div class="arch-card-flow">
+                <div class="arch-flow-node">
+                  <span class="node-icon">1</span>
+                  <h3>CLIP Embedding</h3>
+                  <p>Encodes images and text into a aligned 512-dimension vector space. Combines intent linearly (Query = Image + 0.3 * Text).</p>
+                </div>
+                <div class="arch-flow-node">
+                  <span class="node-icon">2</span>
+                  <h3>pgvector HNSW</h3>
+                  <p>Performs hard SQL filtering (price, category, stock) and executes cosine distance sort on pgvector column with an HNSW index.</p>
+                </div>
+                <div class="arch-flow-node">
+                  <span class="node-icon">3</span>
+                  <h3>Cross-Encoder Rerank</h3>
+                  <p>Jointly reviews query terms against product names of top-50 results using MiniLM-L6 to capture fine-grained similarity.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
