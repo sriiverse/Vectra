@@ -135,7 +135,7 @@
                 </div>
               </div>
 
-              <!-- Column 2: Hard Filters -->
+              <!-- Column 2: Hard Filters + Live Preview -->
               <div class="builder-column">
                 <div class="dashboard-card">
                   <h2 class="card-section-title">2. Business Filters <span class="card-subtitle">(SQL pre-filtering)</span></h2>
@@ -184,13 +184,90 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Live Pipeline Preview Card -->
+                <div class="dashboard-card live-preview-card" id="live-preview-card">
+                  <h2 class="card-section-title">
+                    Live Pipeline Preview
+                    <span class="preview-status-dot" id="preview-status-dot"></span>
+                  </h2>
+
+                  <!-- State: waiting for image -->
+                  <div class="preview-waiting" id="preview-waiting">
+                    <div class="preview-waiting-icon">⬡</div>
+                    <p class="preview-waiting-text">Upload an image to see<br/>real-time pipeline statistics</p>
+                  </div>
+
+                  <!-- State: image ready, awaiting search -->
+                  <div class="preview-ready hidden" id="preview-ready">
+                    <div class="preview-image-row">
+                      <img id="preview-thumb" class="preview-thumb" src="" alt="Query thumbnail" />
+                      <div class="preview-image-meta">
+                        <span class="preview-image-label">Image Ready</span>
+                        <span class="preview-image-sub">512-dim CLIP ViT-B/32</span>
+                        <span class="preview-image-sub">Awaiting search trigger</span>
+                      </div>
+                    </div>
+                    <div class="preview-stats-list">
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">Fusion Weight</span>
+                        <span class="preview-stat-value">0.3 × text blend</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">ANN Index</span>
+                        <span class="preview-stat-value">HNSW cosine ops</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">DB Products</span>
+                        <span class="preview-stat-value" id="preview-db-count">—</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">Reranker</span>
+                        <span class="preview-stat-value">MiniLM-L6 · top-50</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- State: search complete -->
+                  <div class="preview-done hidden" id="preview-done">
+                    <div class="preview-metric-grid">
+                      <div class="preview-metric">
+                        <span class="metric-value" id="metric-retrieved">—</span>
+                        <span class="metric-label">Candidates</span>
+                      </div>
+                      <div class="preview-metric">
+                        <span class="metric-value" id="metric-returned">—</span>
+                        <span class="metric-label">Reranked</span>
+                      </div>
+                    </div>
+                    <div class="preview-stats-list">
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">Retrieval Latency</span>
+                        <span class="preview-stat-value accent" id="metric-latency">—</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">SQL Filtering</span>
+                        <span class="preview-stat-value success" id="metric-filters">✓ Applied</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">Cross-Encoder</span>
+                        <span class="preview-stat-value success">✓ MiniLM-L6</span>
+                      </div>
+                      <div class="preview-stat-row">
+                        <span class="preview-stat-label">Pipeline Status</span>
+                        <span class="preview-stat-value success">✓ Complete</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
             </div>
 
-            <!-- Action Search Bar -->
-            <div class="search-submit-bar">
-              <button class="btn-primary" id="search-btn" disabled>
+            <!-- Full-Width Search CTA -->
+            <div class="search-cta-bar">
+              <button class="btn-primary btn-search-full" id="search-btn" disabled>
                 <span class="btn-icon-svg">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </span>

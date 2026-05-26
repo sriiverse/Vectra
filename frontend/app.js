@@ -26,6 +26,18 @@ const searchBtn       = document.getElementById('search-btn');
 const statusDot       = document.getElementById('status-dot');
 const statusText      = document.getElementById('status-text');
 
+// Live Preview Panel
+const previewStatusDot  = document.getElementById('preview-status-dot');
+const previewWaiting    = document.getElementById('preview-waiting');
+const previewReady      = document.getElementById('preview-ready');
+const previewDone       = document.getElementById('preview-done');
+const previewThumb      = document.getElementById('preview-thumb');
+const previewDbCount    = document.getElementById('preview-db-count');
+const metricRetrieved   = document.getElementById('metric-retrieved');
+const metricReturned    = document.getElementById('metric-returned');
+const metricLatency     = document.getElementById('metric-latency');
+const metricFilters     = document.getElementById('metric-filters');
+
 // Views inside Search Tab
 const searchBuilderView = document.getElementById('search-builder-view');
 const searchResultsView = document.getElementById('search-results-view');
@@ -92,6 +104,8 @@ async function checkHealth() {
       const data = await res.json();
       statusDot.className = 'status-dot online';
       statusText.textContent = `Online · ${data.products_indexed} products indexed`;
+      // Update Live Preview DB count
+      if (previewDbCount) previewDbCount.textContent = `${data.products_indexed} products`;
     } else {
       throw new Error('Non-OK response');
     }
@@ -203,6 +217,7 @@ function setFile(file) {
   dropzoneIdle.classList.add('hidden');
   dropzonePreview.classList.remove('hidden');
   searchBtn.disabled = false;
+  updateLivePreview('ready', url);
 }
 
 function clearFile() {
@@ -212,6 +227,37 @@ function clearFile() {
   dropzoneIdle.classList.remove('hidden');
   dropzonePreview.classList.add('hidden');
   searchBtn.disabled = true;
+  updateLivePreview('waiting');
+}
+
+// ── Live Preview Panel ────────────────────────────────────────
+function updateLivePreview(state, data) {
+  previewWaiting.classList.add('hidden');
+  previewReady.classList.add('hidden');
+  previewDone.classList.add('hidden');
+
+  if (state === 'waiting') {
+    previewWaiting.classList.remove('hidden');
+    previewStatusDot.className = 'preview-status-dot';
+  } else if (state === 'ready') {
+    previewReady.classList.remove('hidden');
+    previewStatusDot.className = 'preview-status-dot ready';
+    if (previewThumb && data) previewThumb.src = data;
+  } else if (state === 'done') {
+    previewDone.classList.remove('hidden');
+    previewStatusDot.className = 'preview-status-dot done';
+    metricRetrieved.textContent = data.total_retrieved;
+    metricReturned.textContent  = data.total_returned;
+    metricLatency.textContent   = `${data.retrieval_latency_ms.toFixed(1)}ms`;
+    // Show which filters were applied
+    const filterParts = [];
+    if (data.filters_applied?.category)      filterParts.push(data.filters_applied.category);
+    if (data.filters_applied?.in_stock_only) filterParts.push('In Stock');
+    if (data.filters_applied?.text_modifier) filterParts.push('Text fusion');
+    metricFilters.textContent = filterParts.length
+      ? `✓ ${filterParts.join(' · ')}`
+      : '✓ None (all products)';
+  }
 }
 
 // ── Input Slider Displays ─────────────────────────────────────
@@ -317,6 +363,9 @@ async function runSearch() {
     
     // Force complete pipeline visual
     completePipelineNode();
+
+    // Update Live Preview Panel with real metrics
+    updateLivePreview('done', data);
 
     // Log this search into local storage history
     saveSearchToHistory({
@@ -455,9 +504,12 @@ function createProductCard(p, index) {
     ? `/images/${encodeURIComponent(p.image_path.replace('data/', ''))}`
     : null;
 
-  const scoreLabel = p.rerank_score != null 
-    ? `rank ${p.rerank_score.toFixed(2)}`
-    : `sim ${(p.similarity * 100).toFixed(0)}%`;
+  const clipSim    = (p.similarity * 100).toFixed(0);
+  const ceScore    = p.rerank_score != null ? p.rerank_score.toFixed(3) : null;
+  const scoreLabel = ceScore ? `${clipSim}% sim` : `${clipSim}% sim`;
+
+  // Build explainability reasons
+  const reasons = generateExplainability(p, activeSearchFilters, index);
 
   card.innerHTML = `
     <div class="product-card-rank">${index + 1}</div>
@@ -476,21 +528,55 @@ function createProductCard(p, index) {
       <span class="product-card-meta">${p.color ? p.color + ' · ' : ''}${p.subcategory || p.category}</span>
       <div class="product-card-footer">
         <span class="product-card-price">₹${parseFloat(p.price).toLocaleString('en-IN')}</span>
-        <span class="badge-stock ${p.in_stock ? 'in' : 'out'}">${p.in_stock ? 'In Stock' : 'Out of Stock'}</span>
+        <span class="badge-stock ${p.in_stock ? 'in' : 'out'}">${p.in_stock ? 'In Stock' : 'Out'}</span>
+      </div>
+
+      <!-- Explainability reasons -->
+      <div class="explain-reasons">
+        ${reasons.map(r => `<span class="explain-reason ${r.type}">${r.text}</span>`).join('')}
+      </div>
+
+      <!-- Pipeline Inspector -->
+      <div class="pipeline-inspector">
+        <button class="inspector-toggle" aria-expanded="false">
+          Pipeline Inspector
+          <span class="toggle-chevron">›</span>
+        </button>
+        <div class="inspector-panel hidden">
+          <div class="inspector-row">
+            <span class="inspector-label">CLIP Similarity</span>
+            <span class="inspector-value accent">${(p.similarity * 100).toFixed(1)}%</span>
+          </div>
+          <div class="inspector-row">
+            <span class="inspector-label">SQL Filter</span>
+            <span class="inspector-value success">✓ Passed</span>
+          </div>
+          ${ceScore ? `
+          <div class="inspector-row">
+            <span class="inspector-label">Cross-Encoder</span>
+            <span class="inspector-value accent">${ceScore}</span>
+          </div>` : ''}
+          <div class="inspector-row">
+            <span class="inspector-label">Final Rank</span>
+            <span class="inspector-value">#${index + 1}</span>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
   // Bind click handlers
   card.addEventListener('click', (e) => {
-    // Exclude bookmark button
+    // Exclude bookmark button and inspector toggle
     if (e.target.closest('.product-card-bookmark')) return;
+    if (e.target.closest('.inspector-toggle')) return;
     useProductAsQuery(p);
   });
   
   card.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       if (e.target.closest('.product-card-bookmark')) return;
+      if (e.target.closest('.inspector-toggle')) return;
       useProductAsQuery(p);
     }
   });
@@ -501,7 +587,63 @@ function createProductCard(p, index) {
     toggleBookmark(p, bookmarkBtn);
   });
 
+  // Pipeline Inspector toggle
+  const inspectorToggle = card.querySelector('.inspector-toggle');
+  const inspectorPanel  = card.querySelector('.inspector-panel');
+  if (inspectorToggle && inspectorPanel) {
+    inspectorToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !inspectorPanel.classList.contains('hidden');
+      inspectorPanel.classList.toggle('hidden', isOpen);
+      inspectorToggle.classList.toggle('open', !isOpen);
+      inspectorToggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
   return card;
+}
+
+// ── Explainability Reason Generator ──────────────────────────
+function generateExplainability(product, filters, index) {
+  const reasons = [];
+  const sim  = product.similarity;
+  const ce   = product.rerank_score;
+
+  // Visual similarity
+  if (sim >= 0.80)      reasons.push({ text: '✓ Strong visual match', type: 'positive' });
+  else if (sim >= 0.60) reasons.push({ text: '✓ Good visual match',   type: 'positive' });
+  else                  reasons.push({ text: '~ Moderate similarity',  type: 'neutral'  });
+
+  // Text modifier effect (cross-encoder lifted it if CE > raw sim signal)
+  if (filters?.text_modifier) {
+    const modifier = filters.text_modifier.toLowerCase();
+    // Check if product color or name mentions the modifier keywords
+    const productText = `${product.name} ${product.color || ''}`.toLowerCase();
+    const keywords    = modifier.replace(/^(but|in|for|with)\s*/i, '').split(/\s+/);
+    const matched     = keywords.some(kw => kw.length > 2 && productText.includes(kw));
+    if (matched) {
+      reasons.push({ text: `✓ Matches "${filters.text_modifier}"`, type: 'positive' });
+    } else {
+      reasons.push({ text: `✓ Modifier applied`, type: 'positive' });
+    }
+  }
+
+  // Category filter match
+  if (filters?.category && product.category === filters.category) {
+    reasons.push({ text: `✓ ${product.category}`, type: 'positive' });
+  }
+
+  // Cross-encoder boosted (top-3 by reranker)
+  if (ce !== null && index < 3) {
+    reasons.push({ text: '✓ CE top-ranked', type: 'positive' });
+  }
+
+  // Stock status
+  if (product.in_stock) {
+    reasons.push({ text: '✓ In stock', type: 'positive' });
+  }
+
+  return reasons;
 }
 
 function getCategoryEmoji(cat) {

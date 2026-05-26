@@ -2004,6 +2004,341 @@ body {
   75% { transform: translateX(-1px) rotate(0deg); }
 }
 
+/* ── Full-Width Search CTA ─────────────────────────────────── */
+.search-cta-bar {
+  margin: 24px 0 32px;
+}
+
+.btn-search-full {
+  width: 100%;
+  padding: 18px 24px;
+  font-size: 16px;
+  letter-spacing: 0.2px;
+  border-radius: var(--radius-md);
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-search-full::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-search-full:hover:not(:disabled)::after {
+  left: 100%;
+}
+
+/* ── Live Preview Card ─────────────────────────────────────── */
+.preview-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin-left: 8px;
+  vertical-align: middle;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.preview-status-dot.ready {
+  background: var(--accent-light);
+  box-shadow: 0 0 7px var(--accent-glow);
+  animation: pulseNode 1.8s infinite alternate ease-in-out;
+}
+
+.preview-status-dot.done {
+  background: var(--success);
+  box-shadow: 0 0 7px var(--success-glow);
+  animation: none;
+}
+
+.preview-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px 16px;
+  opacity: 0.45;
+}
+
+.preview-waiting-icon {
+  font-size: 30px;
+  color: var(--accent);
+  margin-bottom: 10px;
+  animation: logoPulse 2.5s infinite alternate ease-in-out;
+}
+
+.preview-waiting-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.preview-image-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+
+.preview-thumb {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hover);
+}
+
+.preview-image-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preview-image-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.preview-image-sub {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  opacity: 0.65;
+}
+
+.preview-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.preview-stat-row:last-child {
+  border-bottom: none;
+}
+
+.preview-stat-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.preview-stat-value {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.preview-stat-value.accent { color: var(--accent-light); }
+.preview-stat-value.success { color: var(--success); }
+
+.preview-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.preview-metric {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+  animation: slideUpFade 0.4s ease forwards;
+}
+
+.metric-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+
+.metric-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: var(--font-mono);
+}
+
+/* ── Pipeline Inspector (per product card) ─────────────────── */
+.pipeline-inspector {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 6px;
+}
+
+.inspector-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  transition: color 0.15s;
+}
+
+.inspector-toggle:hover {
+  color: var(--accent-light);
+}
+
+.toggle-chevron {
+  transition: transform 0.2s ease;
+  display: inline-block;
+  font-style: normal;
+}
+
+.inspector-toggle.open .toggle-chevron {
+  transform: rotate(90deg);
+}
+
+.inspector-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 6px 0 2px;
+  animation: slideUpFade 0.2s ease forwards;
+}
+
+.inspector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.inspector-row:last-child {
+  border-bottom: none;
+}
+
+.inspector-label {
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.inspector-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.inspector-value.success {
+  color: var(--success);
+}
+
+.inspector-value.accent {
+  color: var(--accent-light);
+}
+
+/* ── Explainability Reasons ────────────────────────────────── */
+.explain-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.explain-reason {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.explain-reason.positive {
+  background: rgba(16, 185, 129, 0.07);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+}
+
+.explain-reason.neutral {
+  background: rgba(var(--accent-rgb), 0.06);
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+
+/* ── Typography Hierarchy Fixes ────────────────────────────── */
+/* Dimmer secondary text for better contrast */
+.product-card-meta        { opacity: 0.55; font-size: 11px; }
+.catalog-card-sub         { opacity: 0.55; }
+.field-hint               { opacity: 0.55; font-size: 11px; }
+.pipeline-connector       { opacity: 0.35; }
+.chip-text span           { opacity: 0.65; }
+.breadcrumb-label         { opacity: 0.55; font-size: 10px; }
+.results-count            { opacity: 0.6; font-size: 13px; }
+
+/* Sharper emphasis on price and key labels */
+.product-card-price {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.product-card-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  color: var(--text-secondary);
+  opacity: 0.7;
+  font-size: 15px;
+}
+
+.card-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+/* ── Utility ───────────────────────────────────────────────── */
 .hidden {
   display: none !important;
 }
+
