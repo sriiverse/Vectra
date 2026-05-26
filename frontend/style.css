@@ -2488,26 +2488,31 @@ body {
 
 .sk-img {
   width: 100%;
-  aspect-ratio: 1;
-  background: var(--bg-input);
+  aspect-ratio: 4/3;
   border-radius: var(--radius-sm);
-  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-hover) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
 }
 
 .sk-line {
   height: 10px;
   border-radius: 5px;
-  background: var(--bg-input);
-  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-hover) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
 }
 .sk-line.long  { width: 85%; }
 .sk-line.med   { width: 60%; }
 .sk-line.short { width: 40%; }
 
 @keyframes skeletonShimmer {
-  0%   { opacity: 0.5; }
-  50%  { opacity: 1; }
-  100% { opacity: 0.5; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* ── Results Topbar ────────────────────────────────────────── */
@@ -2844,9 +2849,11 @@ body {
 /* Image */
 .pcard-img-wrap {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4/3;
   overflow: hidden;
-  background: var(--bg-input);
+  background: linear-gradient(90deg, var(--bg-input) 25%, var(--border-hover) 50%, var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
 }
 
 .pcard-img {
@@ -2857,7 +2864,7 @@ body {
 }
 
 .product-card:hover .pcard-img {
-  transform: scale(1.08);
+  transform: scale(1.04);
 }
 
 .pcard-img-placeholder {
