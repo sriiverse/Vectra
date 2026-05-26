@@ -551,7 +551,7 @@ function createProductCard(p, index) {
   const isSaved = checkIsBookmarked(p.id);
 
   const imgPath = p.image_path
-    ? `/images/${encodeURIComponent(p.image_path.replace('data/', ''))}`
+    ? `/images/${p.image_path.replace('data/', '')}`
     : null;
 
   const simPercent = Math.round(p.similarity * 100);
@@ -781,7 +781,7 @@ function getCategoryEmoji(cat) {
 async function useProductAsQuery(product) {
   if (!product.image_path) return;
   try {
-    const res = await fetch(`/images/${encodeURIComponent(product.image_path.replace('data/', ''))}`);
+    const res = await fetch(`/images/${product.image_path.replace('data/', '')}`);
     const blob = await res.blob();
     const file = new File([blob], 'product.jpg', { type: blob.type });
     
@@ -825,7 +825,7 @@ async function loadCatalog(category = '') {
       card.title = 'Click to use this item as a search query';
 
       const imgPath = p.image_path
-        ? `/images/${encodeURIComponent(p.image_path.replace('data/', ''))}`
+        ? `/images/${p.image_path.replace('data/', '')}`
         : null;
 
       card.innerHTML = `
