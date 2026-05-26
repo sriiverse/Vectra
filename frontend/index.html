@@ -314,30 +314,77 @@
           <!-- View B: Pipeline Loader & Search Results -->
           <div class="search-results-view hidden" id="search-results-view">
             
-            <!-- Loader State -->
+            <!-- Loading State: Live Pipeline Stepper -->
             <div class="results-loading hidden" id="results-loading">
-              <div class="loading-network-visualization">
-                <div class="network-node node-1 active" id="step-embed">
-                  <span class="node-icon">🖼️</span>
-                  <span class="node-label">CLIP Embedding</span>
+              <div class="pipeline-stepper" id="pipeline-stepper">
+                <div class="ps-step" id="ps-step-0" data-stage="Embedding">
+                  <div class="ps-step-head">
+                    <div class="ps-dot"><div class="ps-spinner"></div></div>
+                    <div class="ps-step-info">
+                      <span class="ps-num">1</span>
+                      <span class="ps-name">Embedding</span>
+                      <span class="ps-sub">CLIP ViT-B/32</span>
+                    </div>
+                    <span class="ps-badge" id="ps-badge-0"></span>
+                  </div>
                 </div>
-                <div class="network-node node-2" id="step-retrieve">
-                  <span class="node-icon">🗄️</span>
-                  <span class="node-label">pgvector Search</span>
+                <div class="ps-connector"></div>
+                <div class="ps-step pending" id="ps-step-1" data-stage="Retrieval">
+                  <div class="ps-step-head">
+                    <div class="ps-dot"></div>
+                    <div class="ps-step-info">
+                      <span class="ps-num">2</span>
+                      <span class="ps-name">Candidate Retrieval</span>
+                      <span class="ps-sub">pgvector HNSW</span>
+                    </div>
+                    <span class="ps-badge" id="ps-badge-1"></span>
+                  </div>
                 </div>
-                <div class="network-node node-3" id="step-rerank">
-                  <span class="node-icon">🎯</span>
-                  <span class="node-label">Cross-Rerank</span>
+                <div class="ps-connector"></div>
+                <div class="ps-step pending" id="ps-step-2" data-stage="Filtering">
+                  <div class="ps-step-head">
+                    <div class="ps-dot"></div>
+                    <div class="ps-step-info">
+                      <span class="ps-num">3</span>
+                      <span class="ps-name">SQL Filtering</span>
+                      <span class="ps-sub">Business rules</span>
+                    </div>
+                    <span class="ps-badge" id="ps-badge-2"></span>
+                  </div>
                 </div>
-                <svg class="network-lines" viewBox="0 0 400 100">
-                  <line x1="80" y1="50" x2="200" y2="50" class="line-1" />
-                  <line x1="200" y1="50" x2="320" y2="50" class="line-2" />
-                  <circle cx="80" cy="50" r="4" class="dot-1" />
-                  <circle cx="200" cy="50" r="4" class="dot-2" />
-                  <circle cx="320" cy="50" r="4" class="dot-3" />
-                </svg>
+                <div class="ps-connector"></div>
+                <div class="ps-step pending" id="ps-step-3" data-stage="Reranking">
+                  <div class="ps-step-head">
+                    <div class="ps-dot"></div>
+                    <div class="ps-step-info">
+                      <span class="ps-num">4</span>
+                      <span class="ps-name">Reranking</span>
+                      <span class="ps-sub">Cross-Encoder</span>
+                    </div>
+                    <span class="ps-badge" id="ps-badge-3"></span>
+                  </div>
+                </div>
+                <div class="ps-connector"></div>
+                <div class="ps-step pending" id="ps-step-4" data-stage="Final">
+                  <div class="ps-step-head">
+                    <div class="ps-dot"></div>
+                    <div class="ps-step-info">
+                      <span class="ps-num">5</span>
+                      <span class="ps-name">Final Results</span>
+                      <span class="ps-sub">Top N ranked</span>
+                    </div>
+                    <span class="ps-badge" id="ps-badge-4"></span>
+                  </div>
+                </div>
               </div>
-              <p class="loader-status-text">Warming retrieval engines...</p>
+              <!-- Skeleton cards preview -->
+              <div class="skeleton-grid">
+                <div class="skeleton-card"><div class="sk-img"></div><div class="sk-line long"></div><div class="sk-line med"></div><div class="sk-line short"></div></div>
+                <div class="skeleton-card"><div class="sk-img"></div><div class="sk-line long"></div><div class="sk-line med"></div><div class="sk-line short"></div></div>
+                <div class="skeleton-card"><div class="sk-img"></div><div class="sk-line long"></div><div class="sk-line med"></div><div class="sk-line short"></div></div>
+                <div class="skeleton-card"><div class="sk-img"></div><div class="sk-line long"></div><div class="sk-line med"></div><div class="sk-line short"></div></div>
+                <div class="skeleton-card"><div class="sk-img"></div><div class="sk-line long"></div><div class="sk-line med"></div><div class="sk-line short"></div></div>
+              </div>
             </div>
 
             <!-- Error State -->
@@ -350,40 +397,77 @@
 
             <!-- Results View Contents -->
             <div class="results-container-layout hidden" id="results-container">
-              
-              <div class="results-header-actions">
+
+              <!-- Top bar: back + query recap -->
+              <div class="results-topbar">
                 <button class="btn-back-link" id="btn-back-search">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                  Back to Search Builder
+                  New Search
                 </button>
-                <div class="results-title-meta">
-                  <h1 class="results-heading">Search Results</h1>
-                  <span class="results-count" id="results-count-label">Showing top 10 matches</span>
+
+                <!-- Query Recap -->
+                <div class="query-recap-bar">
+                  <div class="qr-section">
+                    <span class="qr-label">QUERY</span>
+                    <div class="qr-query-visual">
+                      <img id="breadcrumb-query-img" src="" alt="Query" class="qr-thumb" />
+                      <div class="qr-query-text-col">
+                        <span class="qr-modifier" id="breadcrumb-query-text">No text modifier</span>
+                        <span class="qr-blend">Blended weight: 30% (Text) + 70% (Image)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="qr-divider"></div>
+                  <div class="qr-section">
+                    <span class="qr-label">APPLIED FILTERS</span>
+                    <div class="qr-filters" id="breadcrumb-filters">
+                      <span class="filter-badge">All Products</span>
+                    </div>
+                  </div>
+                  <div class="qr-edit-btn">
+                    <button class="btn-ghost-sm" id="btn-back-search-2">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Edit Filters
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Query Breadcrumbs Panel -->
-              <div class="query-breadcrumbs-card">
-                <div class="breadcrumb-group query-meta-box">
-                  <span class="breadcrumb-label">Query Intent</span>
-                  <div class="breadcrumb-query-visual">
-                    <img id="breadcrumb-query-img" src="" alt="Query" />
-                    <span class="breadcrumb-query-text" id="breadcrumb-query-text">No text modifier</span>
-                  </div>
+              <!-- Pipeline summary bar -->
+              <div class="retrieval-summary-bar" id="retrieval-summary-bar">
+                <div class="rs-stats" id="rs-stats">
+                  <span class="rs-stat">Retrieved <strong id="rs-retrieved">—</strong> candidates</span>
+                  <span class="rs-sep">•</span>
+                  <span class="rs-stat">Reranked to <strong id="rs-reranked">—</strong> results</span>
+                  <span class="rs-sep">•</span>
+                  <span class="rs-stat">Retrieval Latency: <strong class="rs-latency" id="rs-latency">—</strong></span>
                 </div>
-                <div class="breadcrumb-group filters-meta-box">
-                  <span class="breadcrumb-label">Applied Filters</span>
-                  <div class="breadcrumb-filters-list" id="breadcrumb-filters">
-                    <span class="filter-badge">All Categories</span>
+                <div class="rs-controls">
+                  <label class="rs-sort-label">Sort by:</label>
+                  <select class="rs-sort-select" id="rs-sort">
+                    <option value="relevance">Relevance (High to Low)</option>
+                    <option value="price-asc">Price (Low to High)</option>
+                    <option value="price-desc">Price (High to Low)</option>
+                  </select>
+                  <div class="rs-view-toggle">
+                    <button class="view-btn active" id="view-grid-btn" title="Grid view">
+                      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+                    </button>
+                    <button class="view-btn" id="view-list-btn" title="List view">
+                      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <!-- Pipeline performance stats -->
-              <div class="results-meta-metrics" id="results-meta"></div>
 
               <!-- Product Cards Grid -->
               <div class="results-grid" id="results-grid"></div>
+
+              <!-- Bottom suggestion bar -->
+              <div class="suggestion-bar">
+                <span class="suggestion-icon">✦</span>
+                <span class="suggestion-text">Looking for something more specific? Try adding <span class="suggestion-tag">color</span>, <span class="suggestion-tag">brand</span>, or <span class="suggestion-tag">style</span> in your search.</span>
+              </div>
 
               <!-- Load More button -->
               <div class="results-footer-actions">

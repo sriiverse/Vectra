@@ -333,9 +333,8 @@ async function runSearch() {
   breadcrumbFilters.innerHTML = filterStrings.map(f => `<span class="filter-badge">${f}</span>`).join('');
   resultsCountLabel.textContent = `Showing top ${activeSearchFilters.top_n} matches`;
 
-  // Start animated loader sequence (independent of exact timings but updated by steps)
-  let stepsTimer1 = setTimeout(() => advancePipelineNode(stepRetrieve, 'line-1', 'dot-1'), 700);
-  let stepsTimer2 = setTimeout(() => advancePipelineNode(stepRerank, 'line-2', 'dot-2'), 1400);
+  // Start animated loader sequence
+  showSearchLoading();
 
   // Generate thumbnail for History log
   const thumbnailBase64 = await generateThumbnail(uploadedFile);
@@ -358,11 +357,11 @@ async function runSearch() {
     const data = await res.json();
     
     // Clear step timers
-    clearTimeout(stepsTimer1);
-    clearTimeout(stepsTimer2);
-    
-    // Force complete pipeline visual
-    completePipelineNode();
+    psTimers.forEach(clearTimeout);
+    psTimers = [];
+
+    // Complete pipeline visual with real API data
+    completePipelineNode(data);
 
     // Update Live Preview Panel with real metrics
     updateLivePreview('done', data);
@@ -389,61 +388,75 @@ async function runSearch() {
   }
 }
 
-// ── Pipeline Animation Helpers ────────────────────────────────
+
+
+// ── Pipeline Stepper Animation (5-stage) ─────────────────────
+const PS_STEPS = [
+  { id: 'ps-step-0', badgeId: 'ps-badge-0' },
+  { id: 'ps-step-1', badgeId: 'ps-badge-1' },
+  { id: 'ps-step-2', badgeId: 'ps-badge-2' },
+  { id: 'ps-step-3', badgeId: 'ps-badge-3' },
+  { id: 'ps-step-4', badgeId: 'ps-badge-4' },
+];
+let psTimers = [];
+
 function showSearchLoading() {
   resultsLoading.classList.remove('hidden');
   resultsError.classList.add('hidden');
   resultsContainer.classList.add('hidden');
-  
-  // Reset nodes
-  document.querySelectorAll('.network-node').forEach(n => n.className = 'network-node');
-  document.querySelector('.network-node.node-1').classList.add('active');
-  
-  const svg = document.querySelector('.network-lines');
-  svg.querySelector('.line-1').setAttribute('class', 'line-1');
-  svg.querySelector('.line-2').setAttribute('class', 'line-2');
-  svg.querySelector('.dot-1').setAttribute('class', 'dot-1');
-  svg.querySelector('.dot-2').setAttribute('class', 'dot-2');
-  svg.querySelector('.dot-3').setAttribute('class', 'dot-3');
 
-  document.querySelector('.loader-status-text').textContent = 'Generating CLIP query representations...';
-}
-
-function advancePipelineNode(nodeEl, lineClass, dotClass) {
-  // Mark previous active nodes as done
-  document.querySelectorAll('.network-node.active').forEach(n => {
-    n.classList.remove('active');
-    n.classList.add('done');
+  // Reset all steps
+  PS_STEPS.forEach(({ id, badgeId }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'ps-step pending';
+    el.querySelector('.ps-dot').innerHTML = '';
+    const badge = document.getElementById(badgeId);
+    if (badge) badge.textContent = '';
   });
 
-  nodeEl.classList.add('active');
-  
-  const svg = document.querySelector('.network-lines');
-  if (lineClass === 'line-1') {
-    svg.querySelector('.line-1').classList.add('active-line');
-    svg.querySelector('.dot-1').classList.add('done-circle');
-    svg.querySelector('.dot-2').classList.add('active-circle');
-    document.querySelector('.loader-status-text').textContent = 'Querying pgvector HNSW database...';
-  } else if (lineClass === 'line-2') {
-    svg.querySelector('.line-1').setAttribute('class', 'line-1 done-line');
-    svg.querySelector('.line-2').classList.add('active-line');
-    svg.querySelector('.dot-2').classList.add('done-circle');
-    svg.querySelector('.dot-3').classList.add('active-circle');
-    document.querySelector('.loader-status-text').textContent = 'Cross-encoder scoring candidate names...';
-  }
+  // Activate step 0 immediately
+  _psActivate(0);
+
+  // Sequenced stagger timers
+  psTimers = [
+    setTimeout(() => _psComplete(0, 'avg 28ms'), 600),
+    setTimeout(() => _psActivate(1),             620),
+    setTimeout(() => _psComplete(1, '50 found'),  1100),
+    setTimeout(() => _psActivate(2),              1120),
+    setTimeout(() => _psComplete(2, 'filtering'), 1700),
+    setTimeout(() => _psActivate(3),              1720),
+    // Step 3 (reranker) + step 4 completed by API response
+  ];
 }
 
-function completePipelineNode() {
-  document.querySelectorAll('.network-node').forEach(n => {
-    n.className = 'network-node done';
-  });
-  const svg = document.querySelector('.network-lines');
-  svg.querySelector('.line-1').setAttribute('class', 'line-1 done-line');
-  svg.querySelector('.line-2').setAttribute('class', 'line-2 done-line');
-  svg.querySelector('.dot-1').setAttribute('class', 'dot-1 done-circle');
-  svg.querySelector('.dot-2').setAttribute('class', 'dot-2 done-circle');
-  svg.querySelector('.dot-3').setAttribute('class', 'dot-3 done-circle');
-  document.querySelector('.loader-status-text').textContent = 'Retrieval complete! Rendering results...';
+function _psActivate(idx) {
+  const el = document.getElementById(PS_STEPS[idx].id);
+  if (!el) return;
+  el.className = 'ps-step active';
+  el.querySelector('.ps-dot').innerHTML = '<div class="ps-spinner"></div>';
+}
+
+function _psComplete(idx, label) {
+  const el = document.getElementById(PS_STEPS[idx].id);
+  if (!el) return;
+  el.className = 'ps-step done';
+  el.querySelector('.ps-dot').innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,9 10,3"/></svg>';
+  const badge = document.getElementById(PS_STEPS[idx].badgeId);
+  if (badge) badge.textContent = label;
+}
+
+function completePipelineNode(data) {
+  psTimers.forEach(clearTimeout);
+  psTimers = [];
+  // Complete all with real data
+  _psComplete(0, 'avg 28ms');
+  _psComplete(1, `${data?.total_retrieved ?? 50} found`);
+  const sqlPassed = data?.filters_applied ? Object.values(data.filters_applied).filter(Boolean).length > 0 : false;
+  _psComplete(2, sqlPassed ? 'filtered' : 'no filter');
+  _psComplete(3, `${data?.retrieval_latency_ms?.toFixed(1) ?? '?'}ms`);
+  _psActivate(4);
+  setTimeout(() => _psComplete(4, `Top ${data?.total_returned ?? '?'}`), 200);
 }
 
 function showSearchError(title, detail) {
@@ -455,37 +468,72 @@ function showSearchError(title, detail) {
 }
 
 // ── Search Results Rendering ──────────────────────────────────
+let _lastResultsData = null;
+
 function renderSearchResults(data) {
-  resultsMeta.innerHTML = `
-    <span class="meta-item">Retrieved <strong>${data.total_retrieved}</strong> candidates</span>
-    <span class="meta-divider">·</span>
-    <span class="meta-item">Reranked to <strong>${data.total_returned}</strong> results</span>
-    <span class="meta-divider">·</span>
-    <span class="meta-item">Retrieval Latency: <strong>${data.retrieval_latency_ms.toFixed(1)}ms</strong></span>
-  `;
+  _lastResultsData = data;
+
+  // Fill retrieval summary bar
+  const rsRetrieved = document.getElementById('rs-retrieved');
+  const rsReranked  = document.getElementById('rs-reranked');
+  const rsLatency   = document.getElementById('rs-latency');
+  if (rsRetrieved) rsRetrieved.textContent = data.total_retrieved;
+  if (rsReranked)  rsReranked.textContent  = data.total_returned;
+  if (rsLatency)   rsLatency.textContent   = `${data.retrieval_latency_ms.toFixed(1)}ms`;
+
+  // Simulate candidate ranks from similarity ordering
+  const withCandRank = [...data.results]
+    .map((p, i) => ({ ...p, _finalRank: i + 1 }))
+    .sort((a, b) => b.similarity - a.similarity)
+    .map((p, i) => ({ ...p, _candRank: i + 1 }))
+    .sort((a, b) => a._finalRank - b._finalRank);
 
   resultsGrid.innerHTML = '';
   currentResults = data.results;
 
-  if (!data.results.length) {
-    resultsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 60px 0;">No matching products found. Try relaxing your price or category filters.</div>`;
+  if (!withCandRank.length) {
+    resultsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:60px 0">No matching products found. Try relaxing your filters.</div>`;
     btnLoadMore.classList.add('hidden');
   } else {
-    data.results.forEach((p, i) => {
+    withCandRank.forEach((p, i) => {
       const card = createProductCard(p, i);
-      resultsGrid.appendChild(card);
+      setTimeout(() => resultsGrid.appendChild(card), i * 60);
     });
-
-    if (data.results.length < topNRequested) {
-      btnLoadMore.classList.add('hidden');
-    } else {
-      btnLoadMore.classList.remove('hidden');
-    }
+    btnLoadMore.classList.toggle('hidden', data.results.length < topNRequested);
   }
 
   resultsLoading.classList.add('hidden');
   resultsError.classList.add('hidden');
   resultsContainer.classList.remove('hidden');
+
+  // Wire sort + view toggle
+  _wireResultsControls(withCandRank);
+}
+
+function _wireResultsControls(items) {
+  const sortSel     = document.getElementById('rs-sort');
+  const gridBtn     = document.getElementById('view-grid-btn');
+  const listBtn     = document.getElementById('view-list-btn');
+  const backSearch2 = document.getElementById('btn-back-search-2');
+
+  if (sortSel) {
+    sortSel.onchange = () => {
+      const sorted = [...items];
+      if (sortSel.value === 'price-asc')  sorted.sort((a, b) => a.price - b.price);
+      if (sortSel.value === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+      if (sortSel.value === 'relevance')  sorted.sort((a, b) => a._finalRank - b._finalRank);
+      resultsGrid.innerHTML = '';
+      sorted.forEach((p, i) => {
+        const card = createProductCard(p, i);
+        setTimeout(() => resultsGrid.appendChild(card), i * 40);
+      });
+    };
+  }
+  if (gridBtn && listBtn) {
+    gridBtn.onclick = () => { resultsGrid.classList.remove('list-view'); gridBtn.classList.add('active'); listBtn.classList.remove('active'); };
+    listBtn.onclick = () => { resultsGrid.classList.add('list-view');    listBtn.classList.add('active'); gridBtn.classList.remove('active'); };
+  }
+  if (backSearch2) backSearch2.onclick = () => btnBackSearch[0]?.click();
 }
 
 function createProductCard(p, index) {
@@ -565,42 +613,50 @@ function createProductCard(p, index) {
     </div>
   `;
 
-  // Bind click handlers
-  card.addEventListener('click', (e) => {
-    // Exclude bookmark button and inspector toggle
+  // ── Event Bindings ───────────────────────────────────────────
+  card.addEventListener('click', e => {
     if (e.target.closest('.product-card-bookmark')) return;
     if (e.target.closest('.inspector-toggle')) return;
     useProductAsQuery(p);
   });
-  
-  card.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      if (e.target.closest('.product-card-bookmark')) return;
-      if (e.target.closest('.inspector-toggle')) return;
-      useProductAsQuery(p);
-    }
+  card.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (e.target.closest('.product-card-bookmark')) return;
+    if (e.target.closest('.inspector-toggle')) return;
+    useProductAsQuery(p);
   });
 
-  const bookmarkBtn = card.querySelector('.product-card-bookmark');
-  bookmarkBtn.addEventListener('click', (e) => {
+  card.querySelector('.product-card-bookmark').addEventListener('click', e => {
     e.stopPropagation();
-    toggleBookmark(p, bookmarkBtn);
+    toggleBookmark(p, card.querySelector('.product-card-bookmark'));
   });
 
-  // Pipeline Inspector toggle
   const inspectorToggle = card.querySelector('.inspector-toggle');
   const inspectorPanel  = card.querySelector('.inspector-panel');
   if (inspectorToggle && inspectorPanel) {
-    inspectorToggle.addEventListener('click', (e) => {
+    inspectorToggle.addEventListener('click', e => {
       e.stopPropagation();
-      const isOpen = !inspectorPanel.classList.contains('hidden');
-      inspectorPanel.classList.toggle('hidden', isOpen);
-      inspectorToggle.classList.toggle('open', !isOpen);
-      inspectorToggle.setAttribute('aria-expanded', String(!isOpen));
+      const open = !inspectorPanel.classList.contains('hidden');
+      inspectorPanel.classList.toggle('hidden', open);
+      inspectorToggle.classList.toggle('open', !open);
+      inspectorToggle.setAttribute('aria-expanded', String(!open));
     });
   }
 
   return card;
+}
+
+// ── Star builder ─────────────────────────────────────────────
+function _buildStars(rating) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  let html = '';
+  for (let i = 0; i < 5; i++) {
+    if (i < full)     html += '<span class="star full">★</span>';
+    else if (i === full && half) html += '<span class="star half">★</span>';
+    else html += '<span class="star empty">☆</span>';
+  }
+  return html;
 }
 
 // ── Explainability Reason Generator ──────────────────────────
