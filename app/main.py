@@ -12,6 +12,7 @@ Endpoints:
 import io
 import os
 import json
+import time
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -26,6 +27,7 @@ from app.embedder import embed_multimodal
 from app.search import hybrid_search
 from app.reranker import rerank
 from app.models import SearchResponse, ProductResult, SearchFilters
+from app.attribute_parser import parse_attributes, build_sql_filters
 
 
 # ---------------------------------------------------------------
@@ -95,13 +97,14 @@ async def search(
     ),
 ):
     """
-    Multi-modal hybrid search.
+    Multi-modal hybrid search with structured attribute parsing.
 
     Pipeline:
-      1. Embed uploaded image (+ optional text modifier) via CLIP
-      2. Execute hybrid SQL + pgvector query (hard filters + ANN similarity)
-      3. Rerank top-50 candidates using Cross-Encoder
-      4. Return top-N results with similarity and rerank scores
+      1. Parse text modifier into structured attributes (color, size, category, price)
+      2. Embed uploaded image (+ optional text modifier) via CLIP
+      3. Execute hybrid SQL + pgvector query with structured filters + ANN similarity
+      4. Rerank top-K candidates using Cross-Encoder + metadata match bonus
+      5. Return top-N results with per-stage scores
     """
     # Parse filters from JSON form field
     try:
@@ -110,6 +113,10 @@ async def search(
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Invalid filters JSON: {e}")
 
+    # Step 0: Parse structured attributes from text modifier
+    parsed_attrs = parse_attributes(f.text_modifier)
+    attr_conditions, attr_params = build_sql_filters(parsed_attrs)
+
     # Read and decode uploaded image
     try:
         contents = await image.read()
@@ -117,44 +124,77 @@ async def search(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image file: {e}")
 
-    # Step 1: Generate multi-modal query embedding
+    # Step 1: Generate multi-modal query embedding (timed)
+    t0 = time.perf_counter()
     query_vector = embed_multimodal(
         image=pil_image,
         text_modifier=f.text_modifier,
         text_weight=f.text_weight,
     )
+    embed_ms = (time.perf_counter() - t0) * 1000
 
-    # Step 2: Hybrid retrieval (SQL hard filters + pgvector ANN)
-    candidates, latency_ms = hybrid_search(
+    # Step 2: Hybrid retrieval (SQL structured filters + pgvector ANN, timed separately)
+    candidates, retrieval_ms = hybrid_search(
         query_vector=query_vector,
-        category=f.category,
-        max_price=f.max_price,
+        category=f.category or parsed_attrs.get("category"),
+        max_price=f.max_price or parsed_attrs.get("max_price"),
         in_stock_only=f.in_stock_only,
         top_k=int(os.getenv("DEFAULT_TOP_K_RETRIEVAL", 50)),
+        color=parsed_attrs.get("color"),
+        size_min=parsed_attrs.get("size_min"),
+        size_max=parsed_attrs.get("size_max"),
+        subcategory=parsed_attrs.get("subcategory"),
     )
 
     total_retrieved = len(candidates)
 
-    # Step 3: Cross-encoder reranking
-    # Build a query string for the reranker from modifiers + category
-    rerank_query = " ".join(filter(None, [
-        f.text_modifier,
-        f"category: {f.category}" if f.category else None,
-        "product image search",
-    ])) or "visual product search"
+    # Record pre-rerank order (by similarity) so frontend can show rank delta
+    for i, c in enumerate(candidates):
+        c["_pre_rerank_rank"] = i + 1
 
-    reranked = rerank(
-        query_text=rerank_query,
-        candidates=candidates,
-        top_n=f.top_n,
-    )
+    # Step 3: Cross-encoder reranking with metadata-aware blending (timed)
+    t1 = time.perf_counter()
+    if f.text_modifier and f.text_modifier.strip():
+        rerank_query = f.text_modifier
+        reranked = rerank(
+            query_text=rerank_query,
+            candidates=candidates,
+            top_n=f.top_n,
+            parsed_attrs=parsed_attrs,
+        )
+    else:
+        for c in candidates:
+            c["rerank_score"] = None
+            c["attr_bonus"] = None
+            c["_pre_rerank_rank"] = c.get("_pre_rerank_rank", 0)
+        reranked = candidates[:f.top_n]
+    rerank_ms = (time.perf_counter() - t1) * 1000
+
+    # Annotate each result with final rank and rank delta
+    for final_rank, r in enumerate(reranked, start=1):
+        pre = r.get("_pre_rerank_rank", final_rank)
+        r["rank_delta"] = pre - final_rank   # positive = moved up
+        r["pre_rerank_rank"] = pre
+
+    # Print debug info
+    print(f"[DEBUG SEARCH] Modifier: '{f.text_modifier}' | "
+          f"embed={embed_ms:.1f}ms retrieval={retrieval_ms:.1f}ms rerank={rerank_ms:.1f}ms | "
+          f"Parsed: color={parsed_attrs.get('color')} size={parsed_attrs.get('size_min')}-{parsed_attrs.get('size_max')} "
+          f"cat={parsed_attrs.get('category')} sub={parsed_attrs.get('subcategory')} "
+          f"price<={parsed_attrs.get('max_price')}")
 
     return SearchResponse(
         results=[ProductResult(**r) for r in reranked],
         total_retrieved=total_retrieved,
         total_returned=len(reranked),
-        retrieval_latency_ms=latency_ms,
-        filters_applied=filter_data,
+        retrieval_latency_ms=retrieval_ms,
+        embed_ms=round(embed_ms, 1),
+        retrieval_ms=round(retrieval_ms, 1),
+        rerank_ms=round(rerank_ms, 1),
+        filters_applied={
+            **filter_data,
+            "_parsed_attributes": parsed_attrs,
+        },
     )
 
 
@@ -210,6 +250,49 @@ async def get_product(product_id: int) -> dict[str, Any]:
             return dict(zip(cols, row))
     finally:
         put_conn(conn)
+
+
+@app.get("/search/explain", tags=["Search"])
+async def explain_search():
+    """
+    Return the current search pipeline configuration and available attributes.
+    Useful for the pipeline inspector UI feature.
+    """
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM products")
+            total = cur.fetchone()[0]
+            cur.execute("SELECT DISTINCT category FROM products ORDER BY category")
+            categories = [r[0] for r in cur.fetchall()]
+            cur.execute("SELECT DISTINCT color FROM products WHERE color IS NOT NULL ORDER BY color")
+            colors = [r[0] for r in cur.fetchall()]
+    finally:
+        put_conn(conn)
+
+    return {
+        "pipeline": {
+            "stage1": "CLIP bi-encoder (image + optional text embedding)",
+            "stage2": "SQL structured attribute filters (color, size, category, price)",
+            "stage3": f"pgvector HNSW ANN search (top-{os.getenv('DEFAULT_TOP_K_RETRIEVAL', '50')})",
+            "stage4": f"Cross-encoder reranking with metadata bonus (top-{os.getenv('DEFAULT_TOP_N_RERANK', '10')})",
+        },
+        "database": {
+            "total_products": total,
+            "categories": categories,
+            "colors": colors,
+        },
+        "attribute_parser": {
+            "description": "Extracts structured filters from natural language text",
+            "supported": ["color", "size range", "category hint", "subcategory hint", "max price"],
+        },
+        "scoring": {
+            "similarity": "CLIP cosine similarity (0-1)",
+            "rerank_score": "Cross-encoder relevance logit",
+            "attr_bonus": "Attribute match bonus (0-1)",
+            "blended_score": "similarity + 0.25*sigmoid(rerank_score) + 0.15*attr_bonus",
+        },
+    }
 
 
 # Serve frontend at root

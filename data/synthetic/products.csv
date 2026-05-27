@@ -1,67 +1,146 @@
-id,name,category,subcategory,color,price,in_stock,stock_count,image_path,description
-1,Classic Cotton T-Shirt,Apparel,Tops,White,499,True,81,data/synthetic/images/product_0001.jpg,White Classic Cotton T-Shirt — Tops
-2,Classic Cotton T-Shirt,Apparel,Tops,Black,499,True,14,data/synthetic/images/product_0002.jpg,Black Classic Cotton T-Shirt — Tops
-3,Classic Cotton T-Shirt,Apparel,Tops,Navy,499,False,0,data/synthetic/images/product_0003.jpg,Navy Classic Cotton T-Shirt — Tops
-4,Slim Fit Chinos,Apparel,Bottoms,Beige,1299,True,3,data/synthetic/images/product_0004.jpg,Beige Slim Fit Chinos — Bottoms
-5,Slim Fit Chinos,Apparel,Bottoms,Olive,1299,True,94,data/synthetic/images/product_0005.jpg,Olive Slim Fit Chinos — Bottoms
-6,Slim Fit Chinos,Apparel,Bottoms,Grey,1299,True,35,data/synthetic/images/product_0006.jpg,Grey Slim Fit Chinos — Bottoms
-7,Floral Summer Dress,Apparel,Dresses,Floral,1599,True,31,data/synthetic/images/product_0007.jpg,Floral Floral Summer Dress — Dresses
-8,Linen Shirt,Apparel,Tops,Sky Blue,899,True,28,data/synthetic/images/product_0008.jpg,Sky Blue Linen Shirt — Tops
-9,Linen Shirt,Apparel,Tops,White,899,True,17,data/synthetic/images/product_0009.jpg,White Linen Shirt — Tops
-10,Denim Jacket,Apparel,Outerwear,Blue,2499,True,94,data/synthetic/images/product_0010.jpg,Blue Denim Jacket — Outerwear
-11,Hoodie Sweatshirt,Apparel,Tops,Grey,1199,True,13,data/synthetic/images/product_0011.jpg,Grey Hoodie Sweatshirt — Tops
-12,Formal Blazer,Apparel,Outerwear,Charcoal,3499,True,86,data/synthetic/images/product_0012.jpg,Charcoal Formal Blazer — Outerwear
-13,Yoga Leggings,Apparel,Activewear,Black,799,True,94,data/synthetic/images/product_0013.jpg,Black Yoga Leggings — Activewear
-14,Yoga Leggings,Apparel,Activewear,Purple,799,False,0,data/synthetic/images/product_0014.jpg,Purple Yoga Leggings — Activewear
-15,Kurti Ethnic Wear,Apparel,Ethnic,Red,1099,True,69,data/synthetic/images/product_0015.jpg,Red Kurti Ethnic Wear — Ethnic
-16,Polo Shirt,Apparel,Tops,Green,699,True,11,data/synthetic/images/product_0016.jpg,Green Polo Shirt — Tops
-17,Cargo Shorts,Apparel,Bottoms,Khaki,899,True,75,data/synthetic/images/product_0017.jpg,Khaki Cargo Shorts — Bottoms
-18,Winter Puffer Jacket,Apparel,Outerwear,Red,3999,True,54,data/synthetic/images/product_0018.jpg,Red Winter Puffer Jacket — Outerwear
-19,Running Sneakers,Footwear,Sports,White,2999,True,4,data/synthetic/images/product_0019.jpg,White Running Sneakers — Sports
-20,Running Sneakers,Footwear,Sports,Black,2999,True,3,data/synthetic/images/product_0020.jpg,Black Running Sneakers — Sports
-21,Running Sneakers,Footwear,Sports,Red,2999,False,0,data/synthetic/images/product_0021.jpg,Red Running Sneakers — Sports
-22,Leather Oxford Shoes,Footwear,Formal,Brown,3499,True,11,data/synthetic/images/product_0022.jpg,Brown Leather Oxford Shoes — Formal
-23,Leather Oxford Shoes,Footwear,Formal,Black,3499,True,27,data/synthetic/images/product_0023.jpg,Black Leather Oxford Shoes — Formal
-24,Casual Loafers,Footwear,Casual,Tan,1799,True,29,data/synthetic/images/product_0024.jpg,Tan Casual Loafers — Casual
-25,Flip Flops,Footwear,Casual,Blue,299,True,64,data/synthetic/images/product_0025.jpg,Blue Flip Flops — Casual
-26,High Heel Sandals,Footwear,Heels,Gold,2199,True,77,data/synthetic/images/product_0026.jpg,Gold High Heel Sandals — Heels
-27,Canvas Sneakers,Footwear,Casual,White,999,True,3,data/synthetic/images/product_0027.jpg,White Canvas Sneakers — Casual
-28,Canvas Sneakers,Footwear,Casual,Navy,999,True,71,data/synthetic/images/product_0028.jpg,Navy Canvas Sneakers — Casual
-29,Ankle Boots,Footwear,Boots,Black,3999,True,25,data/synthetic/images/product_0029.jpg,Black Ankle Boots — Boots
-30,Sports Sandals,Footwear,Sports,Grey,1299,True,91,data/synthetic/images/product_0030.jpg,Grey Sports Sandals — Sports
-31,Wireless Earbuds,Electronics,Audio,White,2499,True,83,data/synthetic/images/product_0031.jpg,White Wireless Earbuds — Audio
-32,Wireless Earbuds,Electronics,Audio,Black,2499,True,89,data/synthetic/images/product_0032.jpg,Black Wireless Earbuds — Audio
-33,Smartwatch,Electronics,Wearables,Black,4999,True,69,data/synthetic/images/product_0033.jpg,Black Smartwatch — Wearables
-34,Smartwatch,Electronics,Wearables,Silver,5499,True,53,data/synthetic/images/product_0034.jpg,Silver Smartwatch — Wearables
-35,Bluetooth Speaker,Electronics,Audio,Black,1999,True,28,data/synthetic/images/product_0035.jpg,Black Bluetooth Speaker — Audio
-36,USB-C Charging Hub,Electronics,Accessories,Grey,1499,True,57,data/synthetic/images/product_0036.jpg,Grey USB-C Charging Hub — Accessories
-37,Mechanical Keyboard,Electronics,Peripherals,Black,3999,True,75,data/synthetic/images/product_0037.jpg,Black Mechanical Keyboard — Peripherals
-38,Portable Power Bank,Electronics,Accessories,Black,1299,True,35,data/synthetic/images/product_0038.jpg,Black Portable Power Bank — Accessories
-39,Wireless Mouse,Electronics,Peripherals,White,899,False,0,data/synthetic/images/product_0039.jpg,White Wireless Mouse — Peripherals
-40,Noise Cancelling Headphones,Electronics,Audio,Black,7999,True,0,data/synthetic/images/product_0040.jpg,Black Noise Cancelling Headphones — Audio
-41,Smart LED Bulb,Electronics,Smart Home,White,499,True,97,data/synthetic/images/product_0041.jpg,White Smart LED Bulb — Smart Home
-42,43-inch Smart TV,Electronics,TV,Black,24999,True,20,data/synthetic/images/product_0042.jpg,Black 43-inch Smart TV — TV
-43,Action Camera,Electronics,Cameras,Black,15999,True,89,data/synthetic/images/product_0043.jpg,Black Action Camera — Cameras
-44,E-Reader,Electronics,Tablets,Black,8999,True,54,data/synthetic/images/product_0044.jpg,Black E-Reader — Tablets
-45,Ceramic Coffee Mug,Home,Kitchen,White,349,True,43,data/synthetic/images/product_0045.jpg,White Ceramic Coffee Mug — Kitchen
-46,Ceramic Coffee Mug,Home,Kitchen,Black,349,True,35,data/synthetic/images/product_0046.jpg,Black Ceramic Coffee Mug — Kitchen
-47,Scented Candle,Home,Decor,Beige,599,True,19,data/synthetic/images/product_0047.jpg,Beige Scented Candle — Decor
-48,Cotton Throw Blanket,Home,Bedding,Grey,999,True,27,data/synthetic/images/product_0048.jpg,Grey Cotton Throw Blanket — Bedding
-49,Cotton Throw Blanket,Home,Bedding,Cream,999,True,97,data/synthetic/images/product_0049.jpg,Cream Cotton Throw Blanket — Bedding
-50,Wooden Serving Tray,Home,Kitchen,Brown,799,True,43,data/synthetic/images/product_0050.jpg,Brown Wooden Serving Tray — Kitchen
-51,Stainless Steel Water Bottle,Home,Kitchen,Silver,699,True,13,data/synthetic/images/product_0051.jpg,Silver Stainless Steel Water Bottle — Kitchen
-52,Stainless Steel Water Bottle,Home,Kitchen,Black,699,True,11,data/synthetic/images/product_0052.jpg,Black Stainless Steel Water Bottle — Kitchen
-53,Indoor Plant Pot,Home,Decor,Terracotta,449,True,48,data/synthetic/images/product_0053.jpg,Terracotta Indoor Plant Pot — Decor
-54,Desk Organiser,Home,Office,Black,899,True,12,data/synthetic/images/product_0054.jpg,Black Desk Organiser — Office
-55,Bamboo Bath Towel,Home,Bathroom,White,599,True,45,data/synthetic/images/product_0055.jpg,White Bamboo Bath Towel — Bathroom
-56,Picture Frame Set,Home,Decor,Gold,799,True,44,data/synthetic/images/product_0056.jpg,Gold Picture Frame Set — Decor
-57,Air Purifier,Home,Appliances,White,7999,True,77,data/synthetic/images/product_0057.jpg,White Air Purifier — Appliances
-58,Robot Vacuum Cleaner,Home,Appliances,Black,14999,True,33,data/synthetic/images/product_0058.jpg,Black Robot Vacuum Cleaner — Appliances
-59,Vitamin C Serum,Beauty,Skincare,Orange,799,True,5,data/synthetic/images/product_0059.jpg,Orange Vitamin C Serum — Skincare
-60,Matte Lipstick,Beauty,Makeup,Red,449,True,93,data/synthetic/images/product_0060.jpg,Red Matte Lipstick — Makeup
-61,Matte Lipstick,Beauty,Makeup,Nude,449,True,58,data/synthetic/images/product_0061.jpg,Nude Matte Lipstick — Makeup
-62,Argan Hair Oil,Beauty,Haircare,Amber,599,True,68,data/synthetic/images/product_0062.jpg,Amber Argan Hair Oil — Haircare
-63,SPF 50 Sunscreen,Beauty,Skincare,White,399,True,15,data/synthetic/images/product_0063.jpg,White SPF 50 Sunscreen — Skincare
-64,Eyeshadow Palette,Beauty,Makeup,Multicolor,1299,True,48,data/synthetic/images/product_0064.jpg,Multicolor Eyeshadow Palette — Makeup
-65,Face Wash Gel,Beauty,Skincare,Green,299,True,10,data/synthetic/images/product_0065.jpg,Green Face Wash Gel — Skincare
-66,Perfume Eau de Toilette,Beauty,Fragrance,Gold,1999,True,70,data/synthetic/images/product_0066.jpg,Gold Perfume Eau de Toilette — Fragrance
+id,name,category,subcategory,color,price,in_stock,stock_count,image_path,description,size_min,size_max
+1,Classic Cotton T-Shirt,Apparel,Tops,White,499,True,81,data/synthetic/images/product_0001.jpg,White Classic Cotton T-Shirt — Tops,1.0,4.0
+2,Classic Cotton T-Shirt,Apparel,Tops,Black,499,True,14,data/synthetic/images/product_0002.jpg,Black Classic Cotton T-Shirt — Tops,1.0,4.0
+3,Classic Cotton T-Shirt,Apparel,Tops,Navy,499,False,0,data/synthetic/images/product_0003.jpg,Navy Classic Cotton T-Shirt — Tops,1.0,4.0
+4,Slim Fit Chinos,Apparel,Bottoms,Beige,1299,True,3,data/synthetic/images/product_0004.jpg,Beige Slim Fit Chinos — Bottoms,0.0,4.0
+5,Slim Fit Chinos,Apparel,Bottoms,Olive,1299,True,94,data/synthetic/images/product_0005.jpg,Olive Slim Fit Chinos — Bottoms,0.0,4.0
+6,Slim Fit Chinos,Apparel,Bottoms,Grey,1299,True,35,data/synthetic/images/product_0006.jpg,Grey Slim Fit Chinos — Bottoms,0.0,4.0
+7,Floral Summer Dress,Apparel,Dresses,Floral,1599,True,31,data/synthetic/images/product_0007.jpg,Floral Floral Summer Dress — Dresses,0.0,4.0
+8,Linen Shirt,Apparel,Tops,Sky Blue,899,True,28,data/synthetic/images/product_0008.jpg,Sky Blue Linen Shirt — Tops,1.0,4.0
+9,Linen Shirt,Apparel,Tops,White,899,True,17,data/synthetic/images/product_0009.jpg,White Linen Shirt — Tops,1.0,4.0
+10,Denim Jacket,Apparel,Outerwear,Blue,2499,True,94,data/synthetic/images/product_0010.jpg,Blue Denim Jacket — Outerwear,1.0,4.0
+11,Hoodie Sweatshirt,Apparel,Tops,Grey,1199,True,13,data/synthetic/images/product_0011.jpg,Grey Hoodie Sweatshirt — Tops,1.0,5.0
+12,Formal Blazer,Apparel,Outerwear,Charcoal,3499,True,86,data/synthetic/images/product_0012.jpg,Charcoal Formal Blazer — Outerwear,1.0,4.0
+13,Yoga Leggings,Apparel,Activewear,Black,799,True,94,data/synthetic/images/product_0013.jpg,Black Yoga Leggings — Activewear,0.0,4.0
+14,Yoga Leggings,Apparel,Activewear,Purple,799,False,0,data/synthetic/images/product_0014.jpg,Purple Yoga Leggings — Activewear,0.0,4.0
+15,Kurti Ethnic Wear,Apparel,Ethnic,Red,1099,True,69,data/synthetic/images/product_0015.jpg,Red Kurti Ethnic Wear — Ethnic,1.0,4.0
+16,Polo Shirt,Apparel,Tops,Green,699,True,11,data/synthetic/images/product_0016.jpg,Green Polo Shirt — Tops,1.0,4.0
+17,Cargo Shorts,Apparel,Bottoms,Khaki,899,True,75,data/synthetic/images/product_0017.jpg,Khaki Cargo Shorts — Bottoms,1.0,4.0
+18,Winter Puffer Jacket,Apparel,Outerwear,Red,3999,True,54,data/synthetic/images/product_0018.jpg,Red Winter Puffer Jacket — Outerwear,1.0,5.0
+19,Silk Evening Gown,Apparel,Dresses,Burgundy,4999,True,4,data/synthetic/images/product_0019.jpg,Burgundy Silk Evening Gown — Dresses,0.0,4.0
+20,Cotton Pyjama Set,Apparel,Bottoms,Mint,899,True,3,data/synthetic/images/product_0020.jpg,Mint Cotton Pyjama Set — Bottoms,1.0,4.0
+21,Casual Blazer,Apparel,Outerwear,Navy,2999,True,11,data/synthetic/images/product_0021.jpg,Navy Casual Blazer — Outerwear,1.0,4.0
+22,Graphic T-Shirt,Apparel,Tops,White,599,True,27,data/synthetic/images/product_0022.jpg,White Graphic T-Shirt — Tops,1.0,4.0
+23,Graphic T-Shirt,Apparel,Tops,Black,599,True,29,data/synthetic/images/product_0023.jpg,Black Graphic T-Shirt — Tops,1.0,4.0
+24,Pleated Skirt,Apparel,Bottoms,Navy,1199,True,64,data/synthetic/images/product_0024.jpg,Navy Pleated Skirt — Bottoms,0.0,4.0
+25,Denim Shorts,Apparel,Bottoms,Blue,699,True,77,data/synthetic/images/product_0025.jpg,Blue Denim Shorts — Bottoms,1.0,4.0
+26,Striped Polo,Apparel,Tops,White,899,True,3,data/synthetic/images/product_0026.jpg,White Striped Polo — Tops,1.0,4.0
+27,Striped Polo,Apparel,Tops,Navy,899,True,71,data/synthetic/images/product_0027.jpg,Navy Striped Polo — Tops,1.0,4.0
+28,Summer Tank Top,Apparel,Tops,Coral,349,True,25,data/synthetic/images/product_0028.jpg,Coral Summer Tank Top — Tops,1.0,4.0
+29,Cardigan Sweater,Apparel,Outerwear,Beige,1999,True,91,data/synthetic/images/product_0029.jpg,Beige Cardigan Sweater — Outerwear,1.0,4.0
+30,Jogger Sweatpants,Apparel,Bottoms,Grey,999,True,83,data/synthetic/images/product_0030.jpg,Grey Jogger Sweatpants — Bottoms,1.0,4.0
+31,Jogger Sweatpants,Apparel,Bottoms,Black,999,True,89,data/synthetic/images/product_0031.jpg,Black Jogger Sweatpants — Bottoms,1.0,4.0
+32,Tunic Top,Apparel,Tops,Teal,799,True,69,data/synthetic/images/product_0032.jpg,Teal Tunic Top — Tops,1.0,4.0
+33,Leather Jacket,Apparel,Outerwear,Black,5999,True,53,data/synthetic/images/product_0033.jpg,Black Leather Jacket — Outerwear,1.0,4.0
+34,Denim Skirt,Apparel,Bottoms,Blue,999,True,28,data/synthetic/images/product_0034.jpg,Blue Denim Skirt — Bottoms,0.0,4.0
+35,Linen Trousers,Apparel,Bottoms,Cream,1499,True,57,data/synthetic/images/product_0035.jpg,Cream Linen Trousers — Bottoms,1.0,4.0
+36,Cropped Hoodie,Apparel,Tops,Pink,1299,True,75,data/synthetic/images/product_0036.jpg,Pink Cropped Hoodie — Tops,1.0,4.0
+37,Slim Fit Chinos,Apparel,Bottoms,Navy,1299,True,35,data/synthetic/images/product_0037.jpg,Navy Slim Fit Chinos — Bottoms,0.0,4.0
+38,Knit Sweater,Apparel,Tops,Burgundy,1599,True,0,data/synthetic/images/product_0038.jpg,Burgundy Knit Sweater — Tops,1.0,4.0
+39,Knit Sweater,Apparel,Tops,Cream,1599,True,97,data/synthetic/images/product_0039.jpg,Cream Knit Sweater — Tops,1.0,4.0
+40,Windbreaker Jacket,Apparel,Outerwear,Teal,2499,True,20,data/synthetic/images/product_0040.jpg,Teal Windbreaker Jacket — Outerwear,1.0,4.0
+41,Running Sneakers,Footwear,Sports,White,2999,True,89,data/synthetic/images/product_0041.jpg,White Running Sneakers — Sports,6.0,12.0
+42,Running Sneakers,Footwear,Sports,Black,2999,True,54,data/synthetic/images/product_0042.jpg,Black Running Sneakers — Sports,6.0,12.0
+43,Running Sneakers,Footwear,Sports,Red,2999,False,0,data/synthetic/images/product_0043.jpg,Red Running Sneakers — Sports,6.0,12.0
+44,Leather Oxford Shoes,Footwear,Formal,Brown,3499,True,43,data/synthetic/images/product_0044.jpg,Brown Leather Oxford Shoes — Formal,7.0,11.0
+45,Leather Oxford Shoes,Footwear,Formal,Black,3499,True,35,data/synthetic/images/product_0045.jpg,Black Leather Oxford Shoes — Formal,7.0,11.0
+46,Casual Loafers,Footwear,Casual,Tan,1799,True,19,data/synthetic/images/product_0046.jpg,Tan Casual Loafers — Casual,7.0,10.0
+47,Flip Flops,Footwear,Casual,Blue,299,True,27,data/synthetic/images/product_0047.jpg,Blue Flip Flops — Casual,6.0,13.0
+48,High Heel Sandals,Footwear,Heels,Gold,2199,True,97,data/synthetic/images/product_0048.jpg,Gold High Heel Sandals — Heels,5.0,9.0
+49,Canvas Sneakers,Footwear,Casual,White,999,True,43,data/synthetic/images/product_0049.jpg,White Canvas Sneakers — Casual,6.0,12.0
+50,Canvas Sneakers,Footwear,Casual,Navy,999,True,13,data/synthetic/images/product_0050.jpg,Navy Canvas Sneakers — Casual,6.0,12.0
+51,Ankle Boots,Footwear,Boots,Black,3999,True,11,data/synthetic/images/product_0051.jpg,Black Ankle Boots — Boots,6.0,10.0
+52,Sports Sandals,Footwear,Sports,Grey,1299,True,48,data/synthetic/images/product_0052.jpg,Grey Sports Sandals — Sports,6.0,12.0
+53,Formal Loafers,Footwear,Formal,Brown,2499,True,12,data/synthetic/images/product_0053.jpg,Brown Formal Loafers — Formal,7.0,11.0
+54,Basketball Shoes,Footwear,Sports,Red,4999,True,45,data/synthetic/images/product_0054.jpg,Red Basketball Shoes — Sports,7.0,13.0
+55,Basketball Shoes,Footwear,Sports,White,4999,True,44,data/synthetic/images/product_0055.jpg,White Basketball Shoes — Sports,7.0,13.0
+56,Wedge Sandals,Footwear,Heels,Tan,1799,True,77,data/synthetic/images/product_0056.jpg,Tan Wedge Sandals — Heels,5.0,9.0
+57,Hiking Boots,Footwear,Boots,Brown,5499,True,33,data/synthetic/images/product_0057.jpg,Brown Hiking Boots — Boots,6.0,12.0
+58,Slip-On Sneakers,Footwear,Casual,Navy,1499,True,5,data/synthetic/images/product_0058.jpg,Navy Slip-On Sneakers — Casual,6.0,11.0
+59,Slip-On Sneakers,Footwear,Casual,Grey,1499,True,93,data/synthetic/images/product_0059.jpg,Grey Slip-On Sneakers — Casual,6.0,11.0
+60,Combat Boots,Footwear,Boots,Black,4499,True,58,data/synthetic/images/product_0060.jpg,Black Combat Boots — Boots,6.0,11.0
+61,Espadrilles,Footwear,Casual,Beige,799,True,68,data/synthetic/images/product_0061.jpg,Beige Espadrilles — Casual,5.0,10.0
+62,Running Sneakers,Footwear,Sports,Blue,2999,True,15,data/synthetic/images/product_0062.jpg,Blue Running Sneakers — Sports,6.0,12.0
+63,Leather Oxford Shoes,Footwear,Formal,Tan,3499,True,48,data/synthetic/images/product_0063.jpg,Tan Leather Oxford Shoes — Formal,7.0,11.0
+64,Platform Heels,Footwear,Heels,Black,2999,True,10,data/synthetic/images/product_0064.jpg,Black Platform Heels — Heels,5.0,9.0
+65,Trail Running Shoes,Footwear,Sports,Teal,3999,True,70,data/synthetic/images/product_0065.jpg,Teal Trail Running Shoes — Sports,6.0,12.0
+66,Wireless Earbuds,Electronics,Audio,White,2499,True,37,data/synthetic/images/product_0066.jpg,White Wireless Earbuds — Audio,,
+67,Wireless Earbuds,Electronics,Audio,Black,2499,True,80,data/synthetic/images/product_0067.jpg,Black Wireless Earbuds — Audio,,
+68,Smartwatch,Electronics,Wearables,Black,4999,True,79,data/synthetic/images/product_0068.jpg,Black Smartwatch — Wearables,,
+69,Smartwatch,Electronics,Wearables,Silver,5499,True,46,data/synthetic/images/product_0069.jpg,Silver Smartwatch — Wearables,,
+70,Bluetooth Speaker,Electronics,Audio,Black,1999,True,73,data/synthetic/images/product_0070.jpg,Black Bluetooth Speaker — Audio,,
+71,USB-C Charging Hub,Electronics,Accessories,Grey,1499,True,24,data/synthetic/images/product_0071.jpg,Grey USB-C Charging Hub — Accessories,,
+72,Mechanical Keyboard,Electronics,Peripherals,Black,3999,True,90,data/synthetic/images/product_0072.jpg,Black Mechanical Keyboard — Peripherals,,
+73,Portable Power Bank,Electronics,Accessories,Black,1299,True,8,data/synthetic/images/product_0073.jpg,Black Portable Power Bank — Accessories,,
+74,Wireless Mouse,Electronics,Peripherals,White,899,False,0,data/synthetic/images/product_0074.jpg,White Wireless Mouse — Peripherals,,
+75,Noise Cancelling Headphones,Electronics,Audio,Black,7999,True,5,data/synthetic/images/product_0075.jpg,Black Noise Cancelling Headphones — Audio,,
+76,Smart LED Bulb,Electronics,Smart Home,White,499,True,84,data/synthetic/images/product_0076.jpg,White Smart LED Bulb — Smart Home,,
+77,43-inch Smart TV,Electronics,TV,Black,24999,True,29,data/synthetic/images/product_0077.jpg,Black 43-inch Smart TV — TV,,
+78,Action Camera,Electronics,Cameras,Black,15999,True,98,data/synthetic/images/product_0078.jpg,Black Action Camera — Cameras,,
+79,E-Reader,Electronics,Tablets,Black,8999,True,37,data/synthetic/images/product_0079.jpg,Black E-Reader — Tablets,,
+80,Bluetooth Speaker,Electronics,Audio,Red,1999,True,10,data/synthetic/images/product_0080.jpg,Red Bluetooth Speaker — Audio,,
+81,Wireless Earbuds,Electronics,Audio,Teal,3499,True,29,data/synthetic/images/product_0081.jpg,Teal Wireless Earbuds — Audio,,
+82,Gaming Mouse,Electronics,Peripherals,Black,1499,True,12,data/synthetic/images/product_0082.jpg,Black Gaming Mouse — Peripherals,,
+83,Webcam HD,Electronics,Peripherals,Black,2999,True,48,data/synthetic/images/product_0083.jpg,Black Webcam HD — Peripherals,,
+84,Portable SSD,Electronics,Accessories,Silver,3999,True,35,data/synthetic/images/product_0084.jpg,Silver Portable SSD — Accessories,,
+85,Portable Power Bank,Electronics,Accessories,White,1299,True,58,data/synthetic/images/product_0085.jpg,White Portable Power Bank — Accessories,,
+86,Smart LED Bulb,Electronics,Smart Home,Colorful,699,True,81,data/synthetic/images/product_0086.jpg,Colorful Smart LED Bulb — Smart Home,,
+87,Tablet Stand,Electronics,Accessories,Silver,999,True,46,data/synthetic/images/product_0087.jpg,Silver Tablet Stand — Accessories,,
+88,Smartwatch,Electronics,Wearables,Gold,7999,True,20,data/synthetic/images/product_0088.jpg,Gold Smartwatch — Wearables,,
+89,Mechanical Keyboard,Electronics,Peripherals,White,4499,True,47,data/synthetic/images/product_0089.jpg,White Mechanical Keyboard — Peripherals,,
+90,Noise Cancelling Headphones,Electronics,Audio,Silver,8999,True,45,data/synthetic/images/product_0090.jpg,Silver Noise Cancelling Headphones — Audio,,
+91,Monitor Light Bar,Electronics,Accessories,Black,1999,True,26,data/synthetic/images/product_0091.jpg,Black Monitor Light Bar — Accessories,,
+92,Wireless Charger,Electronics,Accessories,Black,1499,True,85,data/synthetic/images/product_0092.jpg,Black Wireless Charger — Accessories,,
+93,Wireless Charger,Electronics,Accessories,White,1499,True,34,data/synthetic/images/product_0093.jpg,White Wireless Charger — Accessories,,
+94,Smart Scale,Electronics,Wearables,White,2499,True,89,data/synthetic/images/product_0094.jpg,White Smart Scale — Wearables,,
+95,Smart Scale,Electronics,Wearables,Black,2499,True,87,data/synthetic/images/product_0095.jpg,Black Smart Scale — Wearables,,
+96,Ceramic Coffee Mug,Home,Kitchen,White,349,True,82,data/synthetic/images/product_0096.jpg,White Ceramic Coffee Mug — Kitchen,,
+97,Ceramic Coffee Mug,Home,Kitchen,Black,349,True,9,data/synthetic/images/product_0097.jpg,Black Ceramic Coffee Mug — Kitchen,,
+98,Scented Candle,Home,Decor,Beige,599,True,77,data/synthetic/images/product_0098.jpg,Beige Scented Candle — Decor,,
+99,Cotton Throw Blanket,Home,Bedding,Grey,999,True,81,data/synthetic/images/product_0099.jpg,Grey Cotton Throw Blanket — Bedding,,
+100,Cotton Throw Blanket,Home,Bedding,Cream,999,True,21,data/synthetic/images/product_0100.jpg,Cream Cotton Throw Blanket — Bedding,,
+101,Wooden Serving Tray,Home,Kitchen,Brown,799,True,68,data/synthetic/images/product_0101.jpg,Brown Wooden Serving Tray — Kitchen,,
+102,Stainless Steel Water Bottle,Home,Kitchen,Silver,699,True,93,data/synthetic/images/product_0102.jpg,Silver Stainless Steel Water Bottle — Kitchen,,
+103,Stainless Steel Water Bottle,Home,Kitchen,Black,699,True,31,data/synthetic/images/product_0103.jpg,Black Stainless Steel Water Bottle — Kitchen,,
+104,Indoor Plant Pot,Home,Decor,Terracotta,449,True,20,data/synthetic/images/product_0104.jpg,Terracotta Indoor Plant Pot — Decor,,
+105,Desk Organiser,Home,Office,Black,899,True,59,data/synthetic/images/product_0105.jpg,Black Desk Organiser — Office,,
+106,Bamboo Bath Towel,Home,Bathroom,White,599,True,48,data/synthetic/images/product_0106.jpg,White Bamboo Bath Towel — Bathroom,,
+107,Picture Frame Set,Home,Decor,Gold,799,True,34,data/synthetic/images/product_0107.jpg,Gold Picture Frame Set — Decor,,
+108,Air Purifier,Home,Appliances,White,7999,True,81,data/synthetic/images/product_0108.jpg,White Air Purifier — Appliances,,
+109,Robot Vacuum Cleaner,Home,Appliances,Black,14999,True,88,data/synthetic/images/product_0109.jpg,Black Robot Vacuum Cleaner — Appliances,,
+110,Ceramic Coffee Mug,Home,Kitchen,Teal,399,True,71,data/synthetic/images/product_0110.jpg,Teal Ceramic Coffee Mug — Kitchen,,
+111,Glass Storage Jar,Home,Kitchen,White,499,True,28,data/synthetic/images/product_0111.jpg,White Glass Storage Jar — Kitchen,,
+112,Wool Blanket,Home,Bedding,Burgundy,1999,True,87,data/synthetic/images/product_0112.jpg,Burgundy Wool Blanket — Bedding,,
+113,Wool Blanket,Home,Bedding,Grey,1999,True,41,data/synthetic/images/product_0113.jpg,Grey Wool Blanket — Bedding,,
+114,Scented Candle,Home,Decor,Lavender,699,True,98,data/synthetic/images/product_0114.jpg,Lavender Scented Candle — Decor,,
+115,Bamboo Cutting Board,Home,Kitchen,Brown,599,True,99,data/synthetic/images/product_0115.jpg,Brown Bamboo Cutting Board — Kitchen,,
+116,Throw Pillow,Home,Decor,Mustard,799,True,7,data/synthetic/images/product_0116.jpg,Mustard Throw Pillow — Decor,,
+117,Throw Pillow,Home,Decor,Cream,799,True,29,data/synthetic/images/product_0117.jpg,Cream Throw Pillow — Decor,,
+118,Bath Mat,Home,Bathroom,Teal,449,True,4,data/synthetic/images/product_0118.jpg,Teal Bath Mat — Bathroom,,
+119,Ceramic Vase,Home,Decor,White,899,True,40,data/synthetic/images/product_0119.jpg,White Ceramic Vase — Decor,,
+120,Wall Clock,Home,Decor,Black,1299,True,51,data/synthetic/images/product_0120.jpg,Black Wall Clock — Decor,,
+121,Glass Water Bottle,Home,Kitchen,Clear,599,True,34,data/synthetic/images/product_0121.jpg,Clear Glass Water Bottle — Kitchen,,
+122,Scented Candle,Home,Decor,Rose,699,True,8,data/synthetic/images/product_0122.jpg,Rose Scented Candle — Decor,,
+123,Indoor Plant Pot,Home,Decor,White,499,True,27,data/synthetic/images/product_0123.jpg,White Indoor Plant Pot — Decor,,
+124,Desk Lamp,Home,Office,Black,1499,True,72,data/synthetic/images/product_0124.jpg,Black Desk Lamp — Office,,
+125,Storage Basket,Home,Office,Beige,699,True,91,data/synthetic/images/product_0125.jpg,Beige Storage Basket — Office,,
+126,Vitamin C Serum,Beauty,Skincare,Orange,799,True,40,data/synthetic/images/product_0126.jpg,Orange Vitamin C Serum — Skincare,,
+127,Matte Lipstick,Beauty,Makeup,Red,449,True,27,data/synthetic/images/product_0127.jpg,Red Matte Lipstick — Makeup,,
+128,Matte Lipstick,Beauty,Makeup,Nude,449,True,83,data/synthetic/images/product_0128.jpg,Nude Matte Lipstick — Makeup,,
+129,Argan Hair Oil,Beauty,Haircare,Amber,599,True,63,data/synthetic/images/product_0129.jpg,Amber Argan Hair Oil — Haircare,,
+130,SPF 50 Sunscreen,Beauty,Skincare,White,399,True,50,data/synthetic/images/product_0130.jpg,White SPF 50 Sunscreen — Skincare,,
+131,Eyeshadow Palette,Beauty,Makeup,Multicolor,1299,True,82,data/synthetic/images/product_0131.jpg,Multicolor Eyeshadow Palette — Makeup,,
+132,Face Wash Gel,Beauty,Skincare,Green,299,True,58,data/synthetic/images/product_0132.jpg,Green Face Wash Gel — Skincare,,
+133,Perfume Eau de Toilette,Beauty,Fragrance,Gold,1999,True,18,data/synthetic/images/product_0133.jpg,Gold Perfume Eau de Toilette — Fragrance,,
+134,Nourishing Face Cream,Beauty,Skincare,White,599,True,33,data/synthetic/images/product_0134.jpg,White Nourishing Face Cream — Skincare,,
+135,Eye Cream,Beauty,Skincare,Peach,699,True,17,data/synthetic/images/product_0135.jpg,Peach Eye Cream — Skincare,,
+136,Matte Lipstick,Beauty,Makeup,Pink,449,True,31,data/synthetic/images/product_0136.jpg,Pink Matte Lipstick — Makeup,,
+137,Shampoo,Beauty,Haircare,White,399,True,95,data/synthetic/images/product_0137.jpg,White Shampoo — Haircare,,
+138,Body Lotion,Beauty,Skincare,Lavender,499,True,71,data/synthetic/images/product_0138.jpg,Lavender Body Lotion — Skincare,,
+139,Perfume Eau de Toilette,Beauty,Fragrance,Blush,2499,True,68,data/synthetic/images/product_0139.jpg,Blush Perfume Eau de Toilette — Fragrance,,
+140,Setting Spray,Beauty,Makeup,Black,399,True,33,data/synthetic/images/product_0140.jpg,Black Setting Spray — Makeup,,
+141,Lip Gloss,Beauty,Makeup,Coral,349,True,95,data/synthetic/images/product_0141.jpg,Coral Lip Gloss — Makeup,,
+142,Face Mask Sheet,Beauty,Skincare,White,199,True,74,data/synthetic/images/product_0142.jpg,White Face Mask Sheet — Skincare,,
+143,Hair Serum,Beauty,Haircare,Gold,799,True,54,data/synthetic/images/product_0143.jpg,Gold Hair Serum — Haircare,,
+144,Mascara,Beauty,Makeup,Black,599,True,74,data/synthetic/images/product_0144.jpg,Black Mascara — Makeup,,
+145,Beauty Sponge Set,Beauty,Makeup,Pink,299,True,51,data/synthetic/images/product_0145.jpg,Pink Beauty Sponge Set — Makeup,,

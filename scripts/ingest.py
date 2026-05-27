@@ -42,13 +42,19 @@ def ingest_batch(conn, batch: list[dict]):
     """Insert a batch of products with their embeddings into PostgreSQL."""
     with conn.cursor() as cur:
         for product in batch:
+            size_min_s = product.get("size_min", "").strip()
+            size_max_s = product.get("size_max", "").strip()
+            size_min = float(size_min_s) if size_min_s else None
+            size_max = float(size_max_s) if size_max_s else None
+
             cur.execute(
                 """
                 INSERT INTO products
                     (name, category, subcategory, color, price, in_stock,
-                     stock_count, image_path, description, image_embedding)
+                     stock_count, image_path, description, image_embedding,
+                     size_min, size_max)
                 VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT DO NOTHING;
                 """,
                 (
@@ -62,6 +68,8 @@ def ingest_batch(conn, batch: list[dict]):
                     product.get("image_path"),
                     product.get("description"),
                     product["embedding"],
+                    size_min,
+                    size_max,
                 )
             )
     conn.commit()

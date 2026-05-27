@@ -1,5 +1,5 @@
 """
-Vectra: Cross-Encoder Reranking Module.
+Vectra: Cross-Encoder Reranking Module with Metadata-Aware Scoring.
 
 WHY TWO STAGES (bi-encoder + cross-encoder)?
 ============================================
@@ -24,13 +24,15 @@ Stage 2 — Cross-Encoder (this module):
 The two-stage pipeline is the industry standard architecture for large-scale
 retrieval systems (used by Google, Bing, Amazon Alexa Shopping, etc.).
 
-RERANKER MODEL CHOICE:
-  ms-marco-MiniLM-L-6-v2 is a distilled cross-encoder fine-tuned on MS-MARCO
-  passage ranking. It is accurate enough for product name/description reranking
-  and runs in ~10ms for 50 candidates on CPU — well within P95 latency budget.
+METADATA-AWARE BLENDING:
+  Beyond the cross-encoder, we also compute attribute match bonuses for
+  structured fields (color, size, category, subcategory, price). These bonuses
+  ensure that a product matching the user's explicit attribute constraints
+  ranks higher than a visually similar product that doesn't match.
 """
 
 import os
+import math
 from sentence_transformers import CrossEncoder
 from typing import Any
 
@@ -48,40 +50,99 @@ def _get_reranker() -> CrossEncoder:
     return _reranker
 
 
+def compute_attribute_match_bonus(
+    candidate: dict[str, Any],
+    parsed_attrs: dict | None,
+) -> float:
+    """
+    Compute a bonus score based on structured attribute matches.
+
+    Returns a value in [0, 1] representing how well the candidate's
+    structured metadata matches the user's parsed attribute filters.
+    """
+    if not parsed_attrs:
+        return 0.0
+
+    bonus = 0.0
+    checks = 0
+
+    # Color match
+    if parsed_attrs.get("color") and candidate.get("color"):
+        if candidate["color"].lower() == parsed_attrs["color"].lower():
+            bonus += 1.0
+        checks += 1
+
+    # Category match
+    if parsed_attrs.get("category") and candidate.get("category"):
+        if candidate["category"].lower() == parsed_attrs["category"].lower():
+            bonus += 1.0
+        checks += 1
+
+    # Subcategory match
+    if parsed_attrs.get("subcategory") and candidate.get("subcategory"):
+        if candidate["subcategory"].lower() == parsed_attrs["subcategory"].lower():
+            bonus += 1.5  # subcategory match is more specific
+        checks += 1
+
+    # Size match — check that candidate's size range overlaps the query
+    if parsed_attrs.get("size_min") is not None and parsed_attrs.get("size_max") is not None:
+        c_min = candidate.get("size_min")
+        c_max = candidate.get("size_max")
+        if c_min is not None and c_max is not None:
+            c_min = float(c_min)
+            c_max = float(c_max)
+            q_min = float(parsed_attrs["size_min"])
+            q_max = float(parsed_attrs["size_max"])
+            # Calculate overlap ratio
+            overlap = min(c_max, q_max) - max(c_min, q_min)
+            size_range = max(c_max - c_min, q_max - q_min, 1.0)
+            overlap_ratio = max(0.0, overlap / size_range)
+            bonus += 1.0 * overlap_ratio
+        checks += 1
+
+    # Price match
+    if parsed_attrs.get("max_price") is not None:
+        c_price = candidate.get("price")
+        if c_price is not None and float(c_price) <= parsed_attrs["max_price"]:
+            bonus += 0.5
+        checks += 0.5  # partial weight — price under is not a strong positive signal
+
+    return bonus / max(checks, 1)
+
+
 def rerank(
     query_text: str,
     candidates: list[dict[str, Any]],
     top_n: int = DEFAULT_TOP_N,
+    parsed_attrs: dict | None = None,
 ) -> list[dict[str, Any]]:
     """
-    Rerank a list of bi-encoder candidates using the cross-encoder.
+    Rerank candidates using cross-encoder + metadata attribute matching.
 
-    The cross-encoder scores each (query_text, product_text) pair jointly.
-    Products are sorted by this score descending, and the top_n are returned.
+    The blended score = CLIP similarity 
+                        + 0.25 * sigmoid(cross_encoder_score) 
+                        + 0.15 * attribute_match_bonus
 
     Args:
-        query_text:  The user's text input (modifier or general description).
-                     If the user only uploaded an image with no text, we use
-                     the product category + top CLIP result name as a fallback
-                     query to still benefit from reranking.
-        candidates:  List of product dicts from hybrid_search()
-        top_n:       Final number of results to return after reranking
+        query_text:   The user's text input (modifier or general description).
+        candidates:   List of product dicts from hybrid_search()
+        top_n:        Final number of results to return after reranking
+        parsed_attrs: Parsed structured attributes from attribute_parser
 
     Returns:
-        Re-sorted list of product dicts (top_n), each with an added
-        'rerank_score' key for transparency/debugging.
+        Re-sorted list of product dicts (top_n), each with 'rerank_score' and
+        'attr_bonus' keys for transparency/debugging.
     """
     if not candidates:
         return []
 
     reranker = _get_reranker()
 
-    # Build (query, document) pairs
-    # We use name + subcategory + color + description for maximum context
     pairs = []
     for c in candidates:
         doc_text = " ".join(filter(None, [
             c.get("name", ""),
+            c.get("category", ""),
             c.get("subcategory", ""),
             c.get("color", ""),
             c.get("description", ""),
@@ -90,9 +151,13 @@ def rerank(
 
     scores = reranker.predict(pairs)
 
-    # Attach score to each candidate and sort
     for candidate, score in zip(candidates, scores):
         candidate["rerank_score"] = float(score)
+        ce_sigmoid = 1 / (1 + math.exp(-float(score)))
+        attr_bonus = compute_attribute_match_bonus(candidate, parsed_attrs)
+        candidate["attr_bonus"] = attr_bonus
+        # Blended score: CLIP similarity + reranker signal + metadata match
+        candidate["_blended_score"] = candidate["similarity"] + 0.25 * ce_sigmoid + 0.15 * attr_bonus
 
-    reranked = sorted(candidates, key=lambda x: x["rerank_score"], reverse=True)
+    reranked = sorted(candidates, key=lambda x: x["_blended_score"], reverse=True)
     return reranked[:top_n]

@@ -1,9 +1,21 @@
 """
-Vectra: Real Product Image Downloader
-=====================================
-Downloads 66 real product images from LoremFlickr based on product metadata,
-replacing the gray placeholder images in data/synthetic/images/ so the UI
-and the CLIP model ingest real product photos.
+Vectra: Real Product Image Downloader (Pexels API)
+===================================================
+Downloads real product photos from Pexels for each product in your CSV.
+
+REQUIRED: Get a FREE Pexels API key at https://www.pexels.com/api/
+Then set it as PEXELS_API_KEY in your .env file.
+
+Usage:
+    # Get an API key first, then:
+    python scripts/download_real_images.py
+
+    # If you have an API key:
+    PEXELS_API_KEY=your_key python scripts/download_real_images.py
+
+This will replace ALL images in data/synthetic/images/ with real photos.
+After running, re-ingest:
+    python scripts/ingest.py --csv data/synthetic/products.csv --clear
 """
 
 import os
@@ -12,149 +24,93 @@ import time
 import requests
 from pathlib import Path
 
-# Setup paths
 PROJECT_ROOT = Path(__file__).parent.parent
 CSV_PATH = PROJECT_ROOT / "data" / "synthetic" / "products.csv"
 IMAGES_DIR = PROJECT_ROOT / "data" / "synthetic" / "images"
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-}
+PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
+PEXELS_SEARCH_URL = "https://api.pexels.com/v1/search"
 
-def clean_keywords(name, color, category):
+HEADERS = {"User-Agent": "Vectra/1.0"}
+
+def search_pexels(query: str, per_page: int = 1) -> str | None:
+    if not PEXELS_API_KEY:
+        return None
+    headers = {"Authorization": PEXELS_API_KEY}
+    params = {"query": query, "per_page": per_page, "orientation": "square"}
+    try:
+        resp = requests.get(PEXELS_SEARCH_URL, headers=headers, params=params, timeout=15)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("photos"):
+                return data["photos"][0]["src"]["medium"]
+    except Exception:
+        pass
+    return None
+
+def build_search_query(name: str, color: str, category: str) -> str:
     name_l = name.lower()
     color_l = color.lower() if color else ""
-    
-    # Specific high-quality keywords for LoremFlickr
-    if "t-shirt" in name_l:
-        kw = "tshirt,clothing"
-    elif "shirt" in name_l:
-        kw = "shirt,fashion"
-    elif "chinos" in name_l or "pants" in name_l:
-        kw = "trousers,clothing"
-    elif "leggings" in name_l:
-        kw = "leggings,fitness"
-    elif "dress" in name_l:
-        kw = "dress,fashion"
-    elif "jacket" in name_l:
-        kw = "jacket,coat"
-    elif "blazer" in name_l:
-        kw = "blazer,suit"
-    elif "polo" in name_l:
-        kw = "polo,shirt"
-    elif "shorts" in name_l:
-        kw = "shorts,clothing"
-    elif "sneakers" in name_l:
-        kw = "sneakers,shoes"
-    elif "shoes" in name_l or "loafers" in name_l:
-        kw = "shoes,leather"
-    elif "sandals" in name_l or "flops" in name_l:
-        kw = "sandals"
-    elif "boots" in name_l:
-        kw = "boots"
-    elif "earbuds" in name_l or "headphones" in name_l:
-        kw = "earphones,electronics"
-    elif "smartwatch" in name_l:
-        kw = "smartwatch"
-    elif "speaker" in name_l:
-        kw = "speaker,audio"
-    elif "keyboard" in name_l:
-        kw = "keyboard,computer"
-    elif "mouse" in name_l:
-        kw = "mouse,computer"
-    elif "bulb" in name_l:
-        kw = "lightbulb"
-    elif "tv" in name_l:
-        kw = "television"
-    elif "camera" in name_l:
-        kw = "camera"
-    elif "reader" in name_l:
-        kw = "ereader,tablet"
-    elif "mug" in name_l:
-        kw = "mug,coffee"
-    elif "candle" in name_l:
-        kw = "candle"
-    elif "blanket" in name_l:
-        kw = "blanket"
-    elif "towel" in name_l:
-        kw = "towel"
-    elif "tray" in name_l:
-        kw = "tray,wood"
-    elif "bottle" in name_l:
-        kw = "waterbottle"
-    elif "plant" in name_l or "pot" in name_l:
-        kw = "plant,pot"
-    elif "organiser" in name_l:
-        kw = "desk organizer"
-    elif "frame" in name_l:
-        kw = "pictureframe"
-    elif "purifier" in name_l:
-        kw = "airpurifier"
-    elif "vacuum" in name_l:
-        kw = "vacuum"
-    elif "serum" in name_l or "sunscreen" in name_l or "wash" in name_l or "oil" in name_l:
-        kw = "cosmetic,skincare"
-    elif "lipstick" in name_l:
-        kw = "lipstick,makeup"
-    elif "palette" in name_l:
-        kw = "eyeshadow,makeup"
-    elif "perfume" in name_l:
-        kw = "perfume,bottle"
-    else:
-        kw = f"{category.lower()},product"
-        
-    if color_l:
-        return f"{kw},{color_l}"
-    return kw
+    parts = [name_l]
+    if color_l and color_l not in name_l:
+        parts.append(color_l)
+    if category.lower() not in name_l:
+        parts.append(category.lower())
+    return ", ".join(parts[:3])
 
 def download_images():
-    print(f"[Download] Reading product metadata from {CSV_PATH}...")
+    if PEXELS_API_KEY:
+        print(f"[Download] Using Pexels API (key: {PEXELS_API_KEY[:8]}...)")
+    else:
+        print("[Download] ⚠ No PEXELS_API_KEY set. Using fallback (picsum.photos).")
+        print("  Get a free key at https://www.pexels.com/api/")
+        print("  Then: PEXELS_API_KEY=your_key python scripts/download_real_images.py\n")
+
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     with open(CSV_PATH, newline="") as f:
         reader = list(csv.DictReader(f))
-        
+
     total = len(reader)
-    print(f"[Download] Starting download of {total} images from LoremFlickr...")
-    
-    success_count = 0
+    print(f"[Download] Downloading images for {total} products...")
+
+    success = 0
     for idx, row in enumerate(reader):
         p_id = int(row["id"])
         name = row["name"]
         color = row["color"]
         category = row["category"]
-        
-        # Determine target file path
         filename = f"product_{p_id:04d}.jpg"
         dest_path = IMAGES_DIR / filename
-        
-        # Get query keywords
-        kw = clean_keywords(name, color, category)
-        # We add fashion/product to keywords to make them cleaner
-        url = f"https://loremflickr.com/400/400/{kw}"
-        
-        print(f"[{idx+1}/{total}] Downloading {filename} for '{name}' ({color}) using tags: '{kw}'...")
-        
-        retry = 3
-        while retry > 0:
-            try:
-                res = requests.get(url, headers=HEADERS, timeout=15)
-                if res.status_code == 200 and 'image' in res.headers.get('content-type', ''):
-                    with open(dest_path, "wb") as img_file:
-                        img_file.write(res.content)
-                    success_count += 1
-                    break
-                else:
-                    print(f"  ⚠ Failed status/content type: {res.status_code}, {res.headers.get('content-type')}. Retrying...")
-            except Exception as e:
-                print(f"  ⚠ Connection error: {e}. Retrying...")
-            retry -= 1
-            time.sleep(1)
-            
-        if retry == 0:
-            print(f"  ✗ Failed to download {filename} after 3 attempts.")
-            
-    print(f"\n[Download] Finished. Successfully downloaded {success_count}/{total} images.")
+
+        query = build_search_query(name, color, category)
+        img_url = None
+
+        if PEXELS_API_KEY:
+            img_url = search_pexels(query)
+            time.sleep(0.1)
+
+        if not img_url:
+            img_url = f"https://picsum.photos/seed/{p_id}/400/400"
+
+        try:
+            resp = requests.get(img_url, headers=HEADERS, timeout=20, allow_redirects=True)
+            if resp.status_code == 200 and 'image' in resp.headers.get('content-type', '') and len(resp.content) > 2000:
+                with open(dest_path, "wb") as f:
+                    f.write(resp.content)
+                success += 1
+                if (idx + 1) % 10 == 0:
+                    print(f"  [{idx+1}/{total}] Downloaded {filename}")
+            else:
+                print(f"  ✗ Bad response for {filename}: status={resp.status_code} type={resp.headers.get('content-type')} size={len(resp.content)}")
+        except Exception as e:
+            print(f"  ✗ Failed {filename}: {e}")
+
+        time.sleep(0.2)
+
+    print(f"\n[Download] ✓ {success}/{total} images downloaded to {IMAGES_DIR}")
+    if success > 0:
+        print("\n  Next step: python scripts/ingest.py --csv data/synthetic/products.csv --clear")
 
 if __name__ == "__main__":
     download_images()

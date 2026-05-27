@@ -2,9 +2,9 @@
 Vectra: Hybrid SQL + pgvector Retrieval Module.
 
 Executes a two-constraint query:
-  1. Hard constraint (SQL WHERE): category, price, stock status — filters applied
-     BEFORE vector similarity. This guarantees correctness — no out-of-stock or
-     wrong-category product can ever appear in results.
+  1. Hard constraint (SQL WHERE): category, price, stock status, color, size range — 
+     filters applied BEFORE vector similarity. This guarantees correctness — 
+     no out-of-stock, wrong-category, or wrong-size product can appear in results.
 
   2. Soft constraint (pgvector ANN): cosine distance ordering using the HNSW
      index. Returns the top-k most visually similar candidates that passed the
@@ -39,6 +39,11 @@ def hybrid_search(
     max_price: float | None = None,
     in_stock_only: bool = True,
     top_k: int = DEFAULT_TOP_K,
+    # New structured attribute filters
+    color: str | None = None,
+    size_min: float | None = None,
+    size_max: float | None = None,
+    subcategory: str | None = None,
 ) -> tuple[list[dict[str, Any]], float]:
     """
     Execute a hybrid retrieval query combining SQL hard filters with
@@ -50,15 +55,18 @@ def hybrid_search(
         max_price:    If set, restrict to products at or below this price
         in_stock_only: Whether to restrict to in-stock products only
         top_k:        Number of candidates to return (before reranking)
+        color:        If set, restrict to exact color match
+        size_min:     If set, exclude products with size_max < size_min
+        size_max:     If set, exclude products with size_min > size_max
+        subcategory:  If set, restrict to this subcategory
 
     Returns:
         Tuple of (list of product dicts, query_latency_ms)
 
     Each product dict contains:
         id, name, category, subcategory, color, price, in_stock,
-        image_path, description, similarity (cosine similarity score)
+        image_path, description, size_min, size_max, similarity (cosine similarity score)
     """
-    # Build WHERE clause dynamically based on provided filters
     conditions = []
     params: list[Any] = []
 
@@ -69,15 +77,26 @@ def hybrid_search(
         conditions.append("category = %s")
         params.append(category)
 
+    if subcategory:
+        conditions.append("subcategory = %s")
+        params.append(subcategory)
+
     if max_price is not None:
         conditions.append("price <= %s")
         params.append(max_price)
 
+    if color:
+        conditions.append("color = %s")
+        params.append(color)
+
+    if size_min is not None and size_max is not None:
+        conditions.append("size_min IS NOT NULL AND size_max IS NOT NULL")
+        conditions.append("size_min <= %s AND size_max >= %s")
+        params.append(size_max)
+        params.append(size_min)
+
     where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-    # pgvector cosine distance operator: <=>
-    # Returns distance (0 = identical, 2 = opposite); we convert to similarity
-    # by: similarity = 1 - cosine_distance
     sql = f"""
         SELECT
             id,
@@ -89,6 +108,8 @@ def hybrid_search(
             in_stock,
             image_path,
             description,
+            size_min,
+            size_max,
             1 - (image_embedding <=> %s::vector) AS similarity
         FROM products
         {where_clause}
@@ -96,7 +117,6 @@ def hybrid_search(
         LIMIT %s;
     """
 
-    # pgvector expects the vector as a Python list (it handles serialisation)
     vector_param = query_vector.tolist()
     params = [vector_param] + params + [vector_param, top_k]
 

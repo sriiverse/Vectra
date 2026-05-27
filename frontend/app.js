@@ -407,6 +407,9 @@ function showSearchLoading() {
   resultsError.classList.add('hidden');
   resultsContainer.classList.add('hidden');
 
+  // Inject skeleton cards immediately for perceived performance
+  _injectSkeletonCards();
+
   // Reset all steps
   PS_STEPS.forEach(({ id, badgeId }) => {
     const el = document.getElementById(id);
@@ -420,17 +423,41 @@ function showSearchLoading() {
   // Activate step 0 immediately
   _psActivate(0);
 
-  // Sequenced stagger timers
+  // Sequenced stagger timers — step labels updated with real data on completion
   psTimers = [
-    setTimeout(() => _psComplete(0, 'avg 28ms'), 600),
-    setTimeout(() => _psActivate(1),             620),
-    setTimeout(() => _psComplete(1, '50 found'),  1100),
-    setTimeout(() => _psActivate(2),              1120),
-    setTimeout(() => _psComplete(2, 'filtering'), 1700),
-    setTimeout(() => _psActivate(3),              1720),
-    // Step 3 (reranker) + step 4 completed by API response
+    setTimeout(() => _psComplete(0, 'embedding…'), 400),
+    setTimeout(() => _psActivate(1),               420),
+    setTimeout(() => _psComplete(1, 'searching…'), 900),
+    setTimeout(() => _psActivate(2),               920),
+    setTimeout(() => _psComplete(2, 'filtering…'), 1400),
+    setTimeout(() => _psActivate(3),               1420),
+    // Steps 3+4 completed by API response with real timing
   ];
 }
+
+function _injectSkeletonCards() {
+  // Show skeleton cards in the results area while loading
+  if (!resultsGrid) return;
+  resultsGrid.innerHTML = '';
+  const count = topNRequested || 10;
+  const skeletonCount = Math.min(count, 10);
+  for (let i = 0; i < skeletonCount; i++) {
+    const sk = document.createElement('div');
+    sk.className = 'skeleton-card';
+    sk.style.setProperty('--i', String(i));
+    sk.style.animationDelay = `${i * 40}ms`;
+    sk.innerHTML = `
+      <div class="sk-img"></div>
+      <div class="sk-line long"></div>
+      <div class="sk-line med"></div>
+      <div class="sk-line short"></div>
+    `;
+    resultsGrid.appendChild(sk);
+  }
+  // Briefly show results container so skeletons are visible
+  resultsContainer.classList.remove('hidden');
+}
+
 
 function _psActivate(idx) {
   const el = document.getElementById(PS_STEPS[idx].id);
@@ -451,12 +478,16 @@ function _psComplete(idx, label) {
 function completePipelineNode(data) {
   psTimers.forEach(clearTimeout);
   psTimers = [];
-  // Complete all with real data
-  _psComplete(0, 'avg 28ms');
-  _psComplete(1, `${data?.total_retrieved ?? 50} found`);
-  const sqlPassed = data?.filters_applied ? Object.values(data.filters_applied).filter(Boolean).length > 0 : false;
-  _psComplete(2, sqlPassed ? 'filtered' : 'no filter');
-  _psComplete(3, `${data?.retrieval_latency_ms?.toFixed(1) ?? '?'}ms`);
+  // Use REAL measured timings from backend
+  const embedMs  = data?.embed_ms     ? `${data.embed_ms.toFixed(1)}ms`    : 'done';
+  const retrieveMs = data?.retrieval_ms ? `${data.retrieval_ms.toFixed(1)}ms` : `${data?.total_retrieved ?? 50} found`;
+  const rerankMs = data?.rerank_ms    ? `${data.rerank_ms.toFixed(1)}ms`   : 'done';
+  _psComplete(0, embedMs);
+  _psComplete(1, retrieveMs);
+  const hasFilters = data?.filters_applied?._parsed_attributes &&
+    Object.values(data.filters_applied._parsed_attributes).some(v => v != null && v !== '');
+  _psComplete(2, hasFilters ? '✓ filtered' : 'no constraints');
+  _psComplete(3, rerankMs);
   _psActivate(4);
   setTimeout(() => _psComplete(4, `Top ${data?.total_returned ?? '?'}`), 200);
 }
@@ -483,33 +514,104 @@ function renderSearchResults(data) {
   if (rsReranked)  rsReranked.textContent  = data.total_returned;
   if (rsLatency)   rsLatency.textContent   = `${data.retrieval_latency_ms.toFixed(1)}ms`;
 
-  // Simulate candidate ranks from similarity ordering
-  const withCandRank = [...data.results]
-    .map((p, i) => ({ ...p, _finalRank: i + 1 }))
-    .sort((a, b) => b.similarity - a.similarity)
-    .map((p, i) => ({ ...p, _candRank: i + 1 }))
-    .sort((a, b) => a._finalRank - b._finalRank);
+  // Build final-rank order with rank deltas from API
+  const finalOrder = data.results.map((p, i) => ({
+    ...p,
+    _finalRank: i + 1,
+    _candRank: p.pre_rerank_rank || (i + 1),
+    _rankDelta: p.rank_delta || 0,
+  }));
 
-  resultsGrid.innerHTML = '';
   currentResults = data.results;
+  resultsGrid.innerHTML = '';
 
-  if (!withCandRank.length) {
+  // Set data-count for adaptive CSS grid
+  resultsGrid.setAttribute('data-count', String(finalOrder.length));
+
+  if (!finalOrder.length) {
     resultsGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-secondary);padding:60px 0">No matching products found. Try relaxing your filters.</div>`;
     btnLoadMore.classList.add('hidden');
-  } else {
-    withCandRank.forEach((p, i) => {
-      const card = createProductCard(p, i);
-      setTimeout(() => resultsGrid.appendChild(card), i * 60);
-    });
-    btnLoadMore.classList.toggle('hidden', data.results.length < topNRequested);
+    resultsLoading.classList.add('hidden');
+    resultsError.classList.add('hidden');
+    resultsContainer.classList.remove('hidden');
+    return;
   }
 
-  resultsLoading.classList.add('hidden');
-  resultsError.classList.add('hidden');
-  resultsContainer.classList.remove('hidden');
+  const hasTextModifier = activeSearchFilters?.text_modifier?.trim();
+
+  if (hasTextModifier) {
+    // ── Animated Rerank Reveal ──────────────────────────────────
+    // Step 1: Show candidates in CLIP similarity order (pre-rerank)
+    const bySimOrder = [...finalOrder].sort((a, b) => (a._candRank || 0) - (b._candRank || 0));
+    bySimOrder.forEach((p, i) => {
+      p._displayIndex = i;
+      const card = createProductCard(p, i);
+      card.setAttribute('data-prod-id', String(p.id));
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px) scale(0.97)';
+      card.style.transition = 'none';
+      resultsGrid.appendChild(card);
+    });
+
+    // Step 2: Fade in skeleton → candidates staggered
+    resultsLoading.classList.add('hidden');
+    resultsError.classList.add('hidden');
+    resultsContainer.classList.remove('hidden');
+
+    bySimOrder.forEach((p, i) => {
+      const card = resultsGrid.querySelector(`[data-prod-id="${p.id}"]`);
+      if (!card) return;
+      setTimeout(() => {
+        card.style.transition = `opacity 0.4s cubic-bezier(0.22,1,0.36,1) ${i * 40}ms, transform 0.4s cubic-bezier(0.22,1,0.36,1) ${i * 40}ms`;
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0) scale(1)';
+      }, 50);
+    });
+
+    // Step 3: After 900ms, re-sort to final reranked order with flash effect
+    setTimeout(() => {
+      // Create new order (final rank)
+      finalOrder.forEach((p, finalIdx) => {
+        const card = resultsGrid.querySelector(`[data-prod-id="${p.id}"]`);
+        if (!card) return;
+        // Update --i for animation delay
+        card.style.setProperty('--i', String(finalIdx));
+        // Order via CSS order property for smooth reflow
+        card.style.order = String(finalIdx);
+        // Flash green glow if it moved up significantly
+        if (p._rankDelta > 1) {
+          card.classList.add('rank-moved');
+          setTimeout(() => card.classList.remove('rank-moved'), 1200);
+        }
+      });
+
+      // Stagger in final reveal with slight delay per card
+      finalOrder.forEach((p, i) => {
+        const card = resultsGrid.querySelector(`[data-prod-id="${p.id}"]`);
+        if (!card) return;
+        setTimeout(() => {
+          card.style.transition = `order 0s, transform 280ms cubic-bezier(0.22,1,0.36,1) ${i * 30}ms, box-shadow 280ms ease ${i * 30}ms`;
+        }, i * 30);
+      });
+    }, 900);
+
+  } else {
+    // ── Standard staggered reveal (no reranking) ────────────────
+    finalOrder.forEach((p, i) => {
+      const card = createProductCard(p, i);
+      card.setAttribute('data-prod-id', String(p.id));
+      resultsGrid.appendChild(card);
+    });
+
+    resultsLoading.classList.add('hidden');
+    resultsError.classList.add('hidden');
+    resultsContainer.classList.remove('hidden');
+  }
+
+  btnLoadMore.classList.toggle('hidden', data.results.length < topNRequested);
 
   // Wire sort + view toggle
-  _wireResultsControls(withCandRank);
+  _wireResultsControls(finalOrder);
 }
 
 function _wireResultsControls(items) {
@@ -527,7 +629,7 @@ function _wireResultsControls(items) {
       resultsGrid.innerHTML = '';
       sorted.forEach((p, i) => {
         const card = createProductCard(p, i);
-        setTimeout(() => resultsGrid.appendChild(card), i * 40);
+        resultsGrid.appendChild(card);
       });
     };
   }
@@ -554,22 +656,37 @@ function createProductCard(p, index) {
     ? `/images/${p.image_path.replace('data/', '')}`
     : null;
 
-  const simPercent = Math.round(p.similarity * 100);
+  // Human-friendly CLIP rescaler mapping [0.35, 0.85] -> [55, 95]
+  const simPercent = Math.min(99, Math.max(45, Math.round(55 + (p.similarity - 0.35) * 80)));
+  
   let confidenceClass = 'score-orange';
-  let confidenceLabel = 'Weak Match';
+  let confidenceLabel = 'Related Style';
   
   if (simPercent >= 90) {
     confidenceClass = 'score-green';
-    confidenceLabel = 'High Relevance';
+    confidenceLabel = 'Closely Matched';
   } else if (simPercent >= 75) {
     confidenceClass = 'score-blue';
-    confidenceLabel = 'Good Match';
+    confidenceLabel = 'Strong Match';
   } else if (simPercent >= 60) {
     confidenceClass = 'score-yellow';
-    confidenceLabel = 'Fair Match';
+    confidenceLabel = 'Similar';
   }
 
-  const ceScore = p.rerank_score != null ? p.rerank_score.toFixed(3) : null;
+  // Contextual CrossEncoder display: hide misleading 0.00, show rank delta
+  const hasTextModifier = activeSearchFilters?.text_modifier?.trim();
+  let ceDisplay;
+  if (hasTextModifier) {
+    const delta = p.rank_delta ?? 0;
+    const isBoosted = delta > 0;
+    ceDisplay = { delta, isBoosted };
+  } else {
+    ceDisplay = null; // no reranker active
+  }
+
+  // Read parsed attributes from last response for the inspector
+  const parsedAttrs = _lastResultsData?.filters_applied?._parsed_attributes || {};
+  const attrBonus = p.attr_bonus != null ? p.attr_bonus.toFixed(3) : null;
 
   // Build explainability reasons
   const reasons = generateExplainability(p, activeSearchFilters, index);
@@ -602,7 +719,7 @@ function createProductCard(p, index) {
     </button>
     
     <!-- Match Score Badge -->
-    <span class="pcard-score-badge ${confidenceClass}">${confidenceLabel} · ${simPercent}%</span>
+    <span class="pcard-score-badge ${confidenceClass}">${confidenceLabel} • ${simPercent}%</span>
     
     <!-- Image Wrap -->
     <div class="pcard-img-wrap">
@@ -638,45 +755,68 @@ function createProductCard(p, index) {
         <div class="pcard-conf-bar-wrap" title="Match Score: ${simPercent}% (${confidenceLabel})">
           <div class="pcard-conf-bar ${confidenceClass}" style="width: ${simPercent}%"></div>
         </div>
-        <span class="pcard-conf-pct ${confidenceClass}">${simPercent}%</span>
       </div>
 
-      <!-- Why this matched (explainability chips) -->
-      <div class="pcard-why-section">
-        <span class="pcard-why-label">Match Rationale</span>
-        <div class="pcard-why-chips">
-          ${reasons.map(r => `<span class="pcard-why-chip ${r.type}">${r.text}</span>`).join('')}
-        </div>
-      </div>
-
-      <!-- Pipeline Inspector -->
+      <!-- Pipeline Inspector (collapsible, high-signal metrics only) -->
       <div class="pipeline-inspector">
         <button class="inspector-toggle" aria-expanded="false">
+          <span class="toggle-dot"></span>
           Pipeline Details
           <span class="toggle-chevron">›</span>
         </button>
-        <div class="inspector-panel hidden">
-          <div class="inspector-row">
-            <span class="inspector-label">Retrieval Stage</span>
-            <span class="inspector-value success">HNSW Cosine</span>
+        <div class="inspector-panel">
+          <div class="inspector-section" style="--section-i: 0">
+            <div class="inspector-row" style="--row-i: 0">
+              <span class="inspector-label">CLIP Similarity</span>
+              <span class="inspector-value score-${confidenceClass}">${(p.similarity * 100).toFixed(1)}%</span>
+            </div>
+            <div class="inspector-row" style="--row-i: 1">
+              <span class="inspector-label">CrossEncoder</span>
+              ${ceDisplay !== null
+                ? `<span class="reranker-badge ${ceDisplay.isBoosted ? 'boosted' : ''}"><span class="rr-dot"></span>${ceDisplay.isBoosted ? `+${ceDisplay.delta} positions` : ceDisplay.delta === 0 ? 'Reranked' : `${ceDisplay.delta} position`}</span>`
+                : `<span class="inspector-value muted">Image-only</span>`
+              }
+            </div>
+            ${p.attr_bonus != null && p.attr_bonus > 0 ? `
+            <div class="inspector-row" style="--row-i: 2">
+              <span class="inspector-label">Attribute Alignment</span>
+              <span class="inspector-value success">${(p.attr_bonus).toFixed(3)}</span>
+            </div>
+            ` : ''}
           </div>
-          <div class="inspector-row">
-            <span class="inspector-label">CLIP Cosine Sim</span>
-            <span class="inspector-value accent">${(p.similarity * 100).toFixed(1)}%</span>
+          
+          <div class="inspector-section" style="--section-i: 1">
+            <div class="inspector-row" style="--row-i: 0">
+              <span class="inspector-label">Cand. Rank</span>
+              <span class="inspector-value">#${p.pre_rerank_rank || p._candRank || (index + 1)}</span>
+            </div>
+            <div class="inspector-row" style="--row-i: 1">
+              <span class="inspector-label">Final Rank</span>
+              <span class="inspector-value success">#${index + 1}</span>
+            </div>
           </div>
-          <div class="inspector-row">
-            <span class="inspector-label">SQL Constraint</span>
-            <span class="inspector-value success">✓ Passed</span>
+
+          <div class="inspector-section constraints-section" style="--section-i: 2">
+            <div class="inspector-section-title">SQL Filters Applied:</div>
+            <div class="inspector-constraints-grid">
+              <span class="constraint-pill" style="--pill-i: 0"><span class="check-icon">✓</span> in-stock</span>
+              ${activeSearchFilters?.category ? `<span class="constraint-pill" style="--pill-i: 1"><span class="check-icon">✓</span> ${activeSearchFilters.category}</span>` : ''}
+              ${activeSearchFilters?.max_price && activeSearchFilters.max_price < 50000 ? `<span class="constraint-pill" style="--pill-i: 2"><span class="check-icon">✓</span> ≤₹${activeSearchFilters.max_price.toLocaleString('en-IN')}</span>` : ''}
+              ${parsedAttrs.color ? `<span class="constraint-pill" style="--pill-i: 3"><span class="check-icon">✓</span> color: ${parsedAttrs.color}</span>` : ''}
+              ${parsedAttrs.size_min != null ? `<span class="constraint-pill" style="--pill-i: 4"><span class="check-icon">✓</span> size ${parsedAttrs.size_min}-${parsedAttrs.size_max}</span>` : ''}
+              ${parsedAttrs.category ? `<span class="constraint-pill" style="--pill-i: 5"><span class="check-icon">✓</span> ${parsedAttrs.category}</span>` : ''}
+              ${parsedAttrs.subcategory ? `<span class="constraint-pill" style="--pill-i: 6"><span class="check-icon">✓</span> ${parsedAttrs.subcategory}</span>` : ''}
+            </div>
           </div>
-          ${ceScore ? `
-          <div class="inspector-row">
-            <span class="inspector-label">Cross-Encoder</span>
-            <span class="inspector-value accent">${ceScore}</span>
-          </div>` : ''}
-          <div class="pcard-rank-footer">
-            <span class="pcard-cand-rank">Candidate Rank: <strong>#${p._candRank || index + 1}</strong></span>
-            <span>➔</span>
-            <span class="pcard-final-rank">Final Rank: <strong>#${index + 1}</strong></span>
+
+          <div class="inspector-section influence-section" style="--section-i: 3">
+            <div class="inspector-section-title">Text Influence:</div>
+            ${activeSearchFilters?.text_modifier ? `
+              <span class="influence-pill success" style="--pill-i: 0">"${activeSearchFilters.text_modifier}"</span>
+              ${p.size_min != null ? `<span class="influence-pill muted" style="--pill-i: 1">size ${p.size_min}-${p.size_max}</span>` : ''}
+            ` : `
+              <span class="influence-pill muted" style="--pill-i: 0">Image-only search</span>
+            `}
           </div>
         </div>
       </div>
@@ -701,17 +841,51 @@ function createProductCard(p, index) {
     toggleBookmark(p, card.querySelector('.product-card-bookmark'));
   });
 
+  const pipelineInspector = card.querySelector('.pipeline-inspector');
   const inspectorToggle = card.querySelector('.inspector-toggle');
-  const inspectorPanel  = card.querySelector('.inspector-panel');
-  if (inspectorToggle && inspectorPanel) {
+  if (inspectorToggle && pipelineInspector) {
     inspectorToggle.addEventListener('click', e => {
       e.stopPropagation();
-      const open = !inspectorPanel.classList.contains('hidden');
-      inspectorPanel.classList.toggle('hidden', open);
-      inspectorToggle.classList.toggle('open', !open);
-      inspectorToggle.setAttribute('aria-expanded', String(!open));
+      const willOpen = !pipelineInspector.classList.contains('open');
+      // Close all other open inspectors first (single-expand pattern)
+      document.querySelectorAll('.pipeline-inspector.open').forEach(el => {
+        if (el !== pipelineInspector) {
+          el.classList.remove('open');
+          el.querySelector('.inspector-toggle')?.classList.remove('open');
+          el.querySelector('.inspector-toggle')?.setAttribute('aria-expanded', 'false');
+        }
+      });
+      pipelineInspector.classList.toggle('open', willOpen);
+      inspectorToggle.classList.toggle('open', willOpen);
+      inspectorToggle.setAttribute('aria-expanded', String(willOpen));
     });
   }
+
+  // Image shimmer → stop when loaded
+  const imgEl = card.querySelector('.pcard-img');
+  const imgWrap = card.querySelector('.pcard-img-wrap');
+  if (imgEl && imgWrap) {
+    imgEl.addEventListener('load', () => imgWrap.classList.add('loaded'), { once: true });
+  }
+
+  // Mouse-tracking glow + image parallax
+  const cardImg = card.querySelector('.pcard-img');
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    card.style.setProperty('--mouse-x', x + '%');
+    card.style.setProperty('--mouse-y', y + '%');
+    // Subtle image parallax (inverse transform)
+    if (cardImg) {
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      cardImg.style.transform = `scale(1.18) translate(${px * -6}px, ${py * -6}px)`;
+    }
+  });
+  card.addEventListener('mouseleave', () => {
+    if (cardImg) cardImg.style.transform = '';
+  });
 
   return card;
 }

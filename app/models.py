@@ -63,6 +63,20 @@ class ProductResult(BaseModel):
         default=None,
         description="Cross-encoder relevance score (higher = more relevant)"
     )
+    attr_bonus: float | None = Field(
+        default=None,
+        description="Attribute metadata match bonus (0-1, from size/color/category matching)"
+    )
+    size_min: float | None = None
+    size_max: float | None = None
+    rank_delta: int = Field(
+        default=0,
+        description="How many positions this product moved after reranking (positive = moved up)"
+    )
+    pre_rerank_rank: int = Field(
+        default=0,
+        description="Rank before cross-encoder reranking (by CLIP similarity)"
+    )
 
 
 class SearchResponse(BaseModel):
@@ -71,4 +85,7 @@ class SearchResponse(BaseModel):
     total_retrieved: int = Field(description="Number of bi-encoder candidates before reranking")
     total_returned: int = Field(description="Number of results after reranking")
     retrieval_latency_ms: float
+    embed_ms: float = Field(default=0.0, description="CLIP embedding time in ms")
+    retrieval_ms: float = Field(default=0.0, description="pgvector retrieval time in ms")
+    rerank_ms: float = Field(default=0.0, description="Cross-encoder reranking time in ms")
     filters_applied: dict[str, Any]

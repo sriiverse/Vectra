@@ -48,7 +48,7 @@ TEST_QUERIES = [
     },
     {
         "name": "Multi-modal modifier — black shoes",
-        "image_name": "product_0019.jpg",   # White Running Sneakers
+        "image_name": "product_0041.jpg",   # White Running Sneakers
         "text_modifier": "but in black",
         "filters": {"category": "Footwear", "in_stock_only": False},
         "relevant_names": ["Running Sneakers"],
@@ -56,7 +56,7 @@ TEST_QUERIES = [
     },
     {
         "name": "Price filter correctness",
-        "image_name": "product_0019.jpg",   # Running Sneakers
+        "image_name": "product_0041.jpg",   # Running Sneakers
         "text_modifier": None,
         "filters": {"category": "Footwear", "max_price": 1500, "in_stock_only": False},
         "relevant_names": ["Flip Flops", "Canvas Sneakers"],
@@ -73,7 +73,7 @@ TEST_QUERIES = [
     },
     {
         "name": "Category boundary — Electronics",
-        "image_name": "product_0031.jpg",   # Wireless Earbuds
+        "image_name": "product_0066.jpg",   # Wireless Earbuds
         "text_modifier": None,
         "filters": {"category": "Electronics", "in_stock_only": False},
         "relevant_names": ["Wireless Earbuds", "Bluetooth Speaker", "Noise Cancelling"],
@@ -81,7 +81,7 @@ TEST_QUERIES = [
     },
     {
         "name": "Near-duplicate detection",
-        "image_name": "product_0045.jpg",   # Ceramic Coffee Mug White
+        "image_name": "product_0096.jpg",   # Ceramic Coffee Mug White
         "text_modifier": None,
         "filters": {"category": "Home", "in_stock_only": False},
         "relevant_names": ["Ceramic Coffee Mug"],
@@ -164,7 +164,7 @@ def run_evaluation(top_k: int = 10, verbose: bool = False):
             continue
 
         data = response.json()
-        retrieved_names = [r["name"] for r in data["results"]]
+        retrieved_names = [f"{r['name']} {r['color']}" if r.get("color") else r["name"] for r in data["results"]]
 
         ndcg    = compute_ndcg(retrieved_names, test["relevant_names"], top_k)
         recall  = compute_recall_at_k(retrieved_names, test["relevant_names"], top_k)
