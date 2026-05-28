@@ -12,6 +12,7 @@ build/
 
 # Data (images are large; commit only metadata CSVs)
 data/synthetic/images/
+data/real/images/
 data/kaggle/
 
 # IDE

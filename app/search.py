@@ -130,3 +130,72 @@ def hybrid_search(
         return [dict(row) for row in rows], latency_ms
     finally:
         put_conn(conn)
+
+
+def keyword_search(
+    query_text: str,
+    category: str | None = None,
+    max_price: float | None = None,
+    in_stock_only: bool = True,
+    top_k: int = DEFAULT_TOP_K,
+    color: str | None = None,
+    size_min: float | None = None,
+    size_max: float | None = None,
+    subcategory: str | None = None,
+) -> tuple[list[dict[str, Any]], float]:
+    conditions = [
+        "to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(description, '')) @@ plainto_tsquery('english', %s)"
+    ]
+    params: list[Any] = [query_text]
+
+    if in_stock_only:
+        conditions.append("in_stock = TRUE")
+
+    if category:
+        conditions.append("category = %s")
+        params.append(category)
+
+    if subcategory:
+        conditions.append("subcategory = %s")
+        params.append(subcategory)
+
+    if max_price is not None:
+        conditions.append("price <= %s")
+        params.append(max_price)
+
+    if color:
+        conditions.append("color = %s")
+        params.append(color)
+
+    if size_min is not None and size_max is not None:
+        conditions.append("size_min IS NOT NULL AND size_max IS NOT NULL")
+        conditions.append("size_min <= %s AND size_max >= %s")
+        params.append(size_max)
+        params.append(size_min)
+
+    where_clause = "WHERE " + " AND ".join(conditions)
+
+    sql = f"""
+        SELECT
+            id, name, category, subcategory, color, price,
+            in_stock, image_path, description, size_min, size_max,
+            ts_rank(to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(description, '')),
+                    plainto_tsquery('english', %s)) AS similarity
+        FROM products
+        {where_clause}
+        ORDER BY similarity DESC
+        LIMIT %s;
+    """
+
+    params = [query_text] + params[1:] + [query_text, top_k]
+
+    conn = get_conn()
+    start = time.perf_counter()
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+        latency_ms = (time.perf_counter() - start) * 1000
+        return [dict(row) for row in rows], latency_ms
+    finally:
+        put_conn(conn)

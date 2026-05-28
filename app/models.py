@@ -45,6 +45,10 @@ class SearchFilters(BaseModel):
         le=50,
         description="Number of final results to return after reranking",
     )
+    skip_rerank: bool = Field(
+        default=False,
+        description="If true, skip cross-encoder reranking and return raw CLIP ordering",
+    )
 
 
 class ProductResult(BaseModel):

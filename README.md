@@ -11,6 +11,7 @@
 [![pgvector](https://img.shields.io/badge/pgvector-HNSW-blueviolet?style=flat-square)](https://github.com/pgvector/pgvector)
 [![CLIP](https://img.shields.io/badge/CLIP-ViT--B%2F32-orange?style=flat-square)](https://github.com/openai/CLIP)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Deploy on HF](https://img.shields.io/badge/Deploy%20on-HuggingFace%20Spaces-yellow?style=flat-square&logo=huggingface)](DEPLOY.md)
 
 **Find products by showing what you want — not describing it.**
 
@@ -424,10 +425,40 @@ The architecture was designed with clear upgrade paths:
 | pgvector (local) | Qdrant / Pinecone | > 5M products |
 | CLIP ViT-B/32 | SigLIP / CLIP ViT-L/14 | When accuracy matters more than speed |
 | MiniLM-L6 reranker | ColBERT | > 10K queries/sec |
-| Custom NLP parser | GPT-4o structured output | Complex multi-intent queries |
+| Custom NLP parser | GPT-4o structured output ✅ | Complex multi-intent queries |
 | Static products.csv | Kafka + streaming ingest | Real-time inventory updates |
 
 Each upgrade is a drop-in replacement for one module — the pipeline architecture doesn't change.
+
+---
+
+## Deployment
+
+Deploy to **Railway** in 5 minutes (free PostgreSQL + pgvector included):
+
+1. **Push to GitHub** — the repo includes a `Dockerfile` and `start.sh` entrypoint.
+2. **Create a Railway project** from your repo — Railway auto-detects the Dockerfile.
+3. **Add a PostgreSQL plugin** — Railway Postgres ships with `pgvector` pre-installed.
+4. **Set environment variables:**
+   - `DATABASE_URL` — auto-populated by the Railway Postgres plugin (the app reads it automatically).
+   - `ANTHROPIC_API_KEY` — required for the LLM-powered attribute parser (Claude).
+   - `DEFAULT_TOP_K_RETRIEVAL` — default `50`.
+   - `DEFAULT_TOP_N_RERANK` — default `10`.
+5. **Deploy** — Railway runs `docker build`, then starts the container.
+   - First start downloads CLIP + cross-encoder models (~700 MB); expect 60–90s cold start.
+   - Subsequent deploys use Railway's image cache.
+
+```bash
+# Or deploy manually via Railway CLI:
+railway login
+railway init
+railway add postgres
+railway up
+```
+
+The `start.sh` script runs `schema.sql` against the database on every boot (idempotent — all statements use `IF NOT EXISTS`).
+
+> **Note on Render, Fly.io, or other platforms:** The `Dockerfile` is platform-agnostic. The only requirement is a PostgreSQL database with the `pgvector` extension. Render's managed Postgres does not support pgvector — use Railway, Supabase, or a self-hosted Postgres with the extension.
 
 ---
 

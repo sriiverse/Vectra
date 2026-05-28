@@ -24,10 +24,10 @@ from PIL import Image
 
 from app.database import get_conn, put_conn, close_pool
 from app.embedder import embed_multimodal
-from app.search import hybrid_search
+from app.search import hybrid_search, keyword_search
 from app.reranker import rerank
 from app.models import SearchResponse, ProductResult, SearchFilters
-from app.attribute_parser import parse_attributes, build_sql_filters
+from app.attribute_parser import parse_attributes
 
 
 # ---------------------------------------------------------------
@@ -113,9 +113,8 @@ async def search(
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Invalid filters JSON: {e}")
 
-    # Step 0: Parse structured attributes from text modifier
+    # Step 0: Parse structured attributes from text modifier via Claude
     parsed_attrs = parse_attributes(f.text_modifier)
-    attr_conditions, attr_params = build_sql_filters(parsed_attrs)
 
     # Read and decode uploaded image
     try:
@@ -154,7 +153,12 @@ async def search(
 
     # Step 3: Cross-encoder reranking with metadata-aware blending (timed)
     t1 = time.perf_counter()
-    if f.text_modifier and f.text_modifier.strip():
+    if f.skip_rerank:
+        for c in candidates:
+            c["rerank_score"] = None
+            c["attr_bonus"] = None
+        reranked = candidates[:f.top_n]
+    elif f.text_modifier and f.text_modifier.strip():
         rerank_query = f.text_modifier
         reranked = rerank(
             query_text=rerank_query,
@@ -250,6 +254,61 @@ async def get_product(product_id: int) -> dict[str, Any]:
             return dict(zip(cols, row))
     finally:
         put_conn(conn)
+
+
+@app.post("/search/text", tags=["Search"])
+async def search_text(
+    query: str = Form(..., description="Text query for keyword search"),
+    filters: str = Form(default="{}", description="JSON string of SearchFilters"),
+):
+    """
+    Text-only keyword search using PostgreSQL full-text search (tsvector/tsquery).
+    Used as a baseline comparison for the multi-modal pipeline.
+
+    Pipeline:
+      1. Parse text modifier into structured attributes
+      2. Execute PostgreSQL full-text search + structured SQL filters
+      3. Return top-N results by ts_rank
+    """
+    try:
+        filter_data = json.loads(filters)
+        f = SearchFilters(**filter_data)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Invalid filters JSON: {e}")
+
+    parsed_attrs = parse_attributes(f.text_modifier or query)
+
+    candidates, retrieval_ms = keyword_search(
+        query_text=query,
+        category=f.category or parsed_attrs.get("category"),
+        max_price=f.max_price or parsed_attrs.get("max_price"),
+        in_stock_only=f.in_stock_only,
+        top_k=int(os.getenv("DEFAULT_TOP_K_RETRIEVAL", 50)),
+        color=parsed_attrs.get("color"),
+        size_min=parsed_attrs.get("size_min"),
+        size_max=parsed_attrs.get("size_max"),
+        subcategory=parsed_attrs.get("subcategory"),
+    )
+
+    for i, c in enumerate(candidates):
+        c["rerank_score"] = None
+        c["attr_bonus"] = None
+        c["rank_delta"] = 0
+        c["pre_rerank_rank"] = i + 1
+
+    top_n = f.top_n
+    results = candidates[:top_n]
+
+    return SearchResponse(
+        results=[ProductResult(**r) for r in results],
+        total_retrieved=len(candidates),
+        total_returned=len(results),
+        retrieval_latency_ms=retrieval_ms,
+        embed_ms=0.0,
+        retrieval_ms=round(retrieval_ms, 1),
+        rerank_ms=0.0,
+        filters_applied={**filter_data, "_parsed_attributes": parsed_attrs, "_mode": "keyword"},
+    )
 
 
 @app.get("/search/explain", tags=["Search"])
