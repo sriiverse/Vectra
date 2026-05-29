@@ -67,7 +67,7 @@ def parse_attributes(text: str | None) -> dict[str, Any]:
 
     lower = text.lower().strip()
 
-    for alias, canonical in COLOR_ALIASES.items():
+    for alias, canonical in sorted(COLOR_ALIASES.items(), key=lambda x: -len(x[0])):
         if alias in lower:
             result["color"] = canonical
             break
@@ -93,8 +93,8 @@ def parse_attributes(text: str | None) -> dict[str, Any]:
             result["size_max"] = v + 0.5
 
     price_patterns = [
-        r"(?:under|below|less than|max|budget|at most)\s*(?:rs\.?\s*|inr\s*|₹\s*)?(\d+(?:,\d{3})*(?:\.\d+)?)",
-        r"(?:rs\.?\s*|inr\s*|₹\s*)?(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:or\s*)?(?:under|below|less)",
+        r"(?:under|below|less than|max|budget|at most)\s*(?:rs\.?\s*|inr\s*|₹\s*|£\s*|\$\s*|€\s*)?(\d+(?:,\d{3})*(?:\.\d+)?)",
+        r"(?:rs\.?\s*|inr\s*|₹\s*|£\s*|\$\s*|€\s*)?(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:or\s*)?(?:under|below|less)",
     ]
     for pat in price_patterns:
         m = re.search(pat, lower)
@@ -117,32 +117,3 @@ def parse_attributes(text: str | None) -> dict[str, Any]:
             break
 
     return result
-
-
-def build_sql_filters(attrs: dict) -> tuple[list[str], list]:
-    conditions = []
-    params: list[Any] = []
-
-    if attrs.get("color"):
-        conditions.append("color = %s")
-        params.append(attrs["color"])
-
-    if attrs.get("size_min") is not None and attrs.get("size_max") is not None:
-        conditions.append("size_min IS NOT NULL AND size_max IS NOT NULL")
-        conditions.append("size_min <= %s AND size_max >= %s")
-        params.append(attrs["size_max"])
-        params.append(attrs["size_min"])
-
-    if attrs.get("category"):
-        conditions.append("category = %s")
-        params.append(attrs["category"])
-
-    if attrs.get("subcategory"):
-        conditions.append("subcategory = %s")
-        params.append(attrs["subcategory"])
-
-    if attrs.get("max_price") is not None:
-        conditions.append("price <= %s")
-        params.append(attrs["max_price"])
-
-    return conditions, params

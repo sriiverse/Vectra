@@ -50,9 +50,13 @@ def get_conn():
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT 1")
+        return conn
     except Exception:
-        conn = psycopg2.connect(_build_dsn())
-    return conn
+        try:
+            get_pool().putconn(conn, close=True)
+        except Exception:
+            pass
+        return psycopg2.connect(_build_dsn())
 
 
 def put_conn(conn):

@@ -33,20 +33,22 @@ METADATA-AWARE BLENDING:
 
 import os
 import math
+import logging
 from sentence_transformers import CrossEncoder
 from typing import Any
 
+logger = logging.getLogger("vectra.reranker")
+
 _RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 _reranker: CrossEncoder | None = None
-DEFAULT_TOP_N = int(os.getenv("DEFAULT_TOP_N_RERANK", 10))
 
 
 def _get_reranker() -> CrossEncoder:
     global _reranker
     if _reranker is None:
-        print(f"[Reranker] Loading cross-encoder: {_RERANKER_MODEL}...")
+        logger.info("Loading cross-encoder: %s", _RERANKER_MODEL)
         _reranker = CrossEncoder(_RERANKER_MODEL)
-        print("[Reranker] Reranker loaded.")
+        logger.info("Reranker loaded.")
     return _reranker
 
 
@@ -113,7 +115,7 @@ def compute_attribute_match_bonus(
 def rerank(
     query_text: str,
     candidates: list[dict[str, Any]],
-    top_n: int = DEFAULT_TOP_N,
+    top_n: int | None = None,
     parsed_attrs: dict | None = None,
 ) -> list[dict[str, Any]]:
     """
@@ -135,6 +137,9 @@ def rerank(
     """
     if not candidates:
         return []
+
+    if top_n is None:
+        top_n = int(os.getenv("DEFAULT_TOP_N_RERANK", 10))
 
     reranker = _get_reranker()
 
@@ -160,4 +165,6 @@ def rerank(
         candidate["_blended_score"] = candidate["similarity"] + 0.25 * ce_sigmoid + 0.15 * attr_bonus
 
     reranked = sorted(candidates, key=lambda x: x["_blended_score"], reverse=True)
+    for r in reranked[:top_n]:
+        r.pop("_blended_score", None)
     return reranked[:top_n]

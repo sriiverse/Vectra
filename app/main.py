@@ -20,7 +20,6 @@ from typing import Any
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from PIL import Image
 
 logger = logging.getLogger("vectra")
