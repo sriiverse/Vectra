@@ -20,10 +20,13 @@ Why CLIP for multi-modal fusion?
 """
 
 import os
+import logging
 import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+
+logger = logging.getLogger("vectra.embedder")
 
 load_dotenv()
 
@@ -36,9 +39,9 @@ _model: SentenceTransformer | None = None
 def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
-        print(f"[Embedder] Loading CLIP model: {_MODEL_NAME}...")
+        logger.info("Loading CLIP model: %s", _MODEL_NAME)
         _model = SentenceTransformer(_MODEL_NAME)
-        print("[Embedder] Model loaded.")
+        logger.info("Model loaded.")
     return _model
 
 
@@ -49,7 +52,10 @@ def embed_image(image: Image.Image) -> np.ndarray:
     """
     model = _get_model()
     embedding = model.encode(image, convert_to_numpy=True)
-    return embedding / np.linalg.norm(embedding)  # ensure unit norm
+    norm = np.linalg.norm(embedding)
+    if norm == 0:
+        raise ValueError("Zero-norm image embedding — check input image")
+    return embedding / norm
 
 
 def embed_text(text: str) -> np.ndarray:
@@ -59,7 +65,10 @@ def embed_text(text: str) -> np.ndarray:
     """
     model = _get_model()
     embedding = model.encode(text, convert_to_numpy=True)
-    return embedding / np.linalg.norm(embedding)
+    norm = np.linalg.norm(embedding)
+    if norm == 0:
+        raise ValueError("Zero-norm text embedding — check input text")
+    return embedding / norm
 
 
 def embed_multimodal(
@@ -100,4 +109,7 @@ def embed_multimodal(
         combined = image_emb
 
     # L2 normalise so cosine similarity = dot product in pgvector
-    return combined / np.linalg.norm(combined)
+    norm = np.linalg.norm(combined)
+    if norm == 0:
+        raise ValueError("Zero-norm combined embedding — check input image or text")
+    return combined / norm

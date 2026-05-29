@@ -441,7 +441,7 @@ Deploy to **Railway** in 5 minutes (free PostgreSQL + pgvector included):
 3. **Add a PostgreSQL plugin** — Railway Postgres ships with `pgvector` pre-installed.
 4. **Set environment variables:**
    - `DATABASE_URL` — auto-populated by the Railway Postgres plugin (the app reads it automatically).
-   - `ANTHROPIC_API_KEY` — required for the LLM-powered attribute parser (Claude).
+   - `PEXELS_API_KEY` — optional; for real product images via Pexels.
    - `DEFAULT_TOP_K_RETRIEVAL` — default `50`.
    - `DEFAULT_TOP_N_RERANK` — default `10`.
 5. **Deploy** — Railway runs `docker build`, then starts the container.

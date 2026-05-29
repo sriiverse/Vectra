@@ -53,6 +53,10 @@ CREATE INDEX IF NOT EXISTS products_price_idx ON products (price);
 CREATE INDEX IF NOT EXISTS products_in_stock_idx ON products (in_stock);
 
 -- ============================================================
+-- GIN index for full-text keyword search (tsvector)
+CREATE INDEX IF NOT EXISTS idx_products_fts ON products
+USING GIN(to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(description, '')));
+
 -- Evaluation log table
 -- Stores search queries and retrieval metrics for benchmarking
 -- ============================================================

@@ -5,7 +5,7 @@ Supports both DATABASE_URL (production / Railway) and individual DB_* vars (loca
 """
 
 import os
-import re
+import threading
 import psycopg2
 import psycopg2.pool
 from dotenv import load_dotenv
@@ -16,7 +16,8 @@ load_dotenv()
 # Connection pool — reuse connections across requests instead of
 # opening a new TCP connection on every API call.
 # ---------------------------------------------------------------
-_pool: psycopg2.pool.SimpleConnectionPool | None = None
+_pool: psycopg2.pool.ThreadedConnectionPool | None = None
+_lock = threading.Lock()
 
 
 def _build_dsn() -> str:
@@ -24,7 +25,6 @@ def _build_dsn() -> str:
     db_url = os.getenv("DATABASE_URL")
     if db_url:
         return db_url
-    # Fall back to individual DB_* variables
     host = os.getenv("DB_HOST", "localhost")
     port = os.getenv("DB_PORT", "5432")
     user = os.getenv("DB_USER", "vectra")
@@ -33,29 +33,33 @@ def _build_dsn() -> str:
     return f"host={host} port={port} dbname={dbname} user={user} password={password}"
 
 
-def get_pool() -> psycopg2.pool.SimpleConnectionPool:
+def get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     global _pool
-    if _pool is None:
-        _pool = psycopg2.pool.SimpleConnectionPool(
-            minconn=1,
-            maxconn=10,
-            dsn=_build_dsn(),
-        )
+    with _lock:
+        if _pool is None:
+            _pool = psycopg2.pool.ThreadedConnectionPool(
+                minconn=1,
+                maxconn=10,
+                dsn=_build_dsn(),
+            )
     return _pool
 
 
 def get_conn():
-    """Get a connection from the pool. Always return it via put_conn()."""
-    return get_pool().getconn()
+    conn = get_pool().getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+    except Exception:
+        conn = psycopg2.connect(_build_dsn())
+    return conn
 
 
 def put_conn(conn):
-    """Return a connection back to the pool."""
     get_pool().putconn(conn)
 
 
 def close_pool():
-    """Gracefully close all pool connections on app shutdown."""
     global _pool
     if _pool:
         _pool.closeall()

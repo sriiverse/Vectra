@@ -146,32 +146,32 @@ def keyword_search(
     conditions = [
         "to_tsvector('english', COALESCE(name, '') || ' ' || COALESCE(description, '')) @@ plainto_tsquery('english', %s)"
     ]
-    params: list[Any] = [query_text]
+    filter_params: list[Any] = []
 
     if in_stock_only:
         conditions.append("in_stock = TRUE")
 
     if category:
         conditions.append("category = %s")
-        params.append(category)
+        filter_params.append(category)
 
     if subcategory:
         conditions.append("subcategory = %s")
-        params.append(subcategory)
+        filter_params.append(subcategory)
 
     if max_price is not None:
         conditions.append("price <= %s")
-        params.append(max_price)
+        filter_params.append(max_price)
 
     if color:
         conditions.append("color = %s")
-        params.append(color)
+        filter_params.append(color)
 
     if size_min is not None and size_max is not None:
         conditions.append("size_min IS NOT NULL AND size_max IS NOT NULL")
         conditions.append("size_min <= %s AND size_max >= %s")
-        params.append(size_max)
-        params.append(size_min)
+        filter_params.append(size_max)
+        filter_params.append(size_min)
 
     where_clause = "WHERE " + " AND ".join(conditions)
 
@@ -187,7 +187,7 @@ def keyword_search(
         LIMIT %s;
     """
 
-    params = [query_text] + params[1:] + [query_text, top_k]
+    params = [query_text] + filter_params + [query_text, top_k]
 
     conn = get_conn()
     start = time.perf_counter()

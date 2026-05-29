@@ -13,6 +13,7 @@ import io
 import os
 import json
 import time
+import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -21,6 +22,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from PIL import Image
+
+logger = logging.getLogger("vectra")
 
 from app.database import get_conn, put_conn, close_pool
 from app.embedder import embed_multimodal
@@ -35,16 +38,15 @@ from app.attribute_parser import parse_attributes
 # ---------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Warm up models on startup so the first request isn't slow
-    print("[Vectra] Warming up models...")
+    logger.info("Warming up models...")
     from app.embedder import _get_model
     from app.reranker import _get_reranker
     _get_model()
     _get_reranker()
-    print("[Vectra] Ready.")
+    logger.info("Ready.")
     yield
     close_pool()
-    print("[Vectra] Shutdown complete.")
+    logger.info("Shutdown complete.")
 
 
 # ---------------------------------------------------------------
@@ -113,15 +115,20 @@ async def search(
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Invalid filters JSON: {e}")
 
-    # Step 0: Parse structured attributes from text modifier via Claude
-    parsed_attrs = parse_attributes(f.text_modifier)
-
-    # Read and decode uploaded image
+    # Read and validate image BEFORE calling parser (don't waste work on bad uploads)
     try:
         contents = await image.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read image: {e}")
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image too large. Max 10MB.")
+    try:
         pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image file: {e}")
+
+    # Step 0: Parse structured attributes from text modifier
+    parsed_attrs = parse_attributes(f.text_modifier)
 
     # Step 1: Generate multi-modal query embedding (timed)
     t0 = time.perf_counter()
@@ -180,18 +187,16 @@ async def search(
         r["rank_delta"] = pre - final_rank   # positive = moved up
         r["pre_rerank_rank"] = pre
 
-    # Print debug info
-    print(f"[DEBUG SEARCH] Modifier: '{f.text_modifier}' | "
-          f"embed={embed_ms:.1f}ms retrieval={retrieval_ms:.1f}ms rerank={rerank_ms:.1f}ms | "
-          f"Parsed: color={parsed_attrs.get('color')} size={parsed_attrs.get('size_min')}-{parsed_attrs.get('size_max')} "
-          f"cat={parsed_attrs.get('category')} sub={parsed_attrs.get('subcategory')} "
-          f"price<={parsed_attrs.get('max_price')}")
+    # Log debug info
+    logger.info("Modifier='%s' embed=%.1fms retrieval=%.1fms rerank=%.1fms color=%s size=%s-%s cat=%s sub=%s price<=%s",
+                f.text_modifier, embed_ms, retrieval_ms, rerank_ms,
+                parsed_attrs.get('color'), parsed_attrs.get('size_min'), parsed_attrs.get('size_max'),
+                parsed_attrs.get('category'), parsed_attrs.get('subcategory'), parsed_attrs.get('max_price'))
 
     return SearchResponse(
         results=[ProductResult(**r) for r in reranked],
         total_retrieved=total_retrieved,
         total_returned=len(reranked),
-        retrieval_latency_ms=retrieval_ms,
         embed_ms=round(embed_ms, 1),
         retrieval_ms=round(retrieval_ms, 1),
         rerank_ms=round(rerank_ms, 1),
@@ -303,7 +308,6 @@ async def search_text(
         results=[ProductResult(**r) for r in results],
         total_retrieved=len(candidates),
         total_returned=len(results),
-        retrieval_latency_ms=retrieval_ms,
         embed_ms=0.0,
         retrieval_ms=round(retrieval_ms, 1),
         rerank_ms=0.0,

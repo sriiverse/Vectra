@@ -3,7 +3,7 @@ Vectra: Pydantic request and response models for the FastAPI layer.
 Using Pydantic v2 for validation, serialisation, and OpenAPI schema generation.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Any
 
 
@@ -53,6 +53,8 @@ class SearchFilters(BaseModel):
 
 class ProductResult(BaseModel):
     """A single product in the search results."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     category: str
@@ -88,7 +90,6 @@ class SearchResponse(BaseModel):
     results: list[ProductResult]
     total_retrieved: int = Field(description="Number of bi-encoder candidates before reranking")
     total_returned: int = Field(description="Number of results after reranking")
-    retrieval_latency_ms: float
     embed_ms: float = Field(default=0.0, description="CLIP embedding time in ms")
     retrieval_ms: float = Field(default=0.0, description="pgvector retrieval time in ms")
     rerank_ms: float = Field(default=0.0, description="Cross-encoder reranking time in ms")
